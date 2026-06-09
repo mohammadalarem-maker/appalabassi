@@ -1,6 +1,5 @@
 package com.supermarket.app.ui.purchases
 import androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
-import androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -42,10 +41,10 @@ class PurchasesViewModel @Inject constructor(
     private val prefs: PrefsManager
 ) : androidx.lifecycle.ViewModel() {
     val purchases: StateFlow<List<Purchase>> = dao.getAllPurchases()
-        .stateIn(androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main), SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main), SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun addPurchase(supplier: String, cost: Double, items: List<PurchaseItem>, paid: Double) {
-        androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+        androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
             val p = Purchase(
                 id = UUID.randomUUID().toString(),
                 supplierName = supplier,

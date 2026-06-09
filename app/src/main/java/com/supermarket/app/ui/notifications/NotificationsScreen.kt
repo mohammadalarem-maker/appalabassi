@@ -1,6 +1,5 @@
 package com.supermarket.app.ui.notifications
 import androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
-import androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -37,7 +36,7 @@ class NotificationsViewModel @Inject constructor(
     val notifications: StateFlow<List<AppNotification>> = _notifications
 
     init {
-        androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+        androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
             repo.getNotifications().collect { _notifications.value = it }
         }
     }

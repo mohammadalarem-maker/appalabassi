@@ -1,6 +1,5 @@
 package com.supermarket.app.ui.expenses
 import androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
-import androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -40,7 +39,7 @@ class ExpensesViewModel @Inject constructor(
     private val prefs: PrefsManager
 ) : androidx.lifecycle.ViewModel() {
     val expenses: StateFlow<List<Expense>> = dao.getAllExpenses()
-        .stateIn(androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main), SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main), SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _totalMonth = MutableStateFlow(0.0)
     val totalMonth: StateFlow<Double> = _totalMonth
@@ -48,7 +47,7 @@ class ExpensesViewModel @Inject constructor(
     init { loadMonthTotal() }
 
     private fun loadMonthTotal() {
-        androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+        androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
             val cal = Calendar.getInstance()
             val end = cal.timeInMillis
             cal.set(Calendar.DAY_OF_MONTH, 1)
@@ -57,7 +56,7 @@ class ExpensesViewModel @Inject constructor(
     }
 
     fun add(title: String, amount: Double, category: ExpenseCategory, desc: String) {
-        androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+        androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
             val e = Expense(UUID.randomUUID().toString(), title, amount, category, desc, prefs.getUser()?.uid ?: "")
             dao.insertExpense(e)
             repo.addExpense(e)
@@ -66,7 +65,7 @@ class ExpensesViewModel @Inject constructor(
     }
 
     fun delete(id: String) {
-        androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch { dao.deleteExpense(id) }
+        androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch { dao.deleteExpense(id) }
     }
 }
 

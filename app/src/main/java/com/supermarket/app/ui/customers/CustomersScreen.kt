@@ -3,7 +3,6 @@
 // ============================
 package com.supermarket.app.ui.customers
 import androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
-import androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main)
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -41,10 +40,10 @@ class CustomersViewModel @Inject constructor(
     private val _q = MutableStateFlow("")
     val customers: StateFlow<List<Customer>> = _q.debounce(300).flatMapLatest { q ->
         if (q.isEmpty()) dao.getAllCustomers() else dao.searchCustomers(q)
-    }.stateIn(androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main), SharingStarted.WhileSubscribed(5000), emptyList())
+    }.stateIn(androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main), SharingStarted.WhileSubscribed(5000), emptyList())
     fun search(q: String) { _q.value = q }
     fun add(name: String, phone: String, email: String) {
-        androidx.lifecycle.viewModel.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+        androidx.lifecycle.kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
             val c = Customer(UUID.randomUUID().toString(), name, phone, email)
             dao.insertCustomer(c); repo.addCustomer(c)
         }
