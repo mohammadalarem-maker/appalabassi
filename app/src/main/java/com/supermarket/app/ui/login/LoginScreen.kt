@@ -104,7 +104,7 @@ fun LoginScreen(
             Spacer(Modifier.height(70.dp))
 
             // Logo area
-            enter = androidx.compose.animation.fadeIn(),
+            AnimatedVisibility(visible, enter = androidx.compose.animation.fadeIn()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
                     // Animated cart icon in glowing box
@@ -167,7 +167,7 @@ fun LoginScreen(
             Spacer(Modifier.height(36.dp))
 
             // Login card
-            enter = androidx.compose.animation.fadeIn(),
+            AnimatedVisibility(visible, enter = androidx.compose.animation.fadeIn()) {
 
                 Card(
                     Modifier.fillMaxWidth().border(
@@ -295,7 +295,7 @@ fun LoginScreen(
             }
 
             Spacer(Modifier.height(28.dp))
-            AnimatedVisibility(visible, enter = fadeIn(tween(800, 700))) {
+            AnimatedVisibility(visible, enter = androidx.compose.animation.fadeIn()) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("تطوير: كلود • بواسطة محمد الصارم",
                         fontSize = 11.sp, color = SMColors.TextMuted)
