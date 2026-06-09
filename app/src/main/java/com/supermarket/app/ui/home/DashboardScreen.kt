@@ -79,7 +79,7 @@ fun DashboardScreen(
                     .background(
                         Brush.linearGradient(
                             listOf(SMColors.Primary, SMColors.PrimaryDark, Color(0xFF006B3A)),
-                            start = Offset(0f, 0f), end = Offset(Float.MAX_VALUE, Float.MAX_VALUE)
+                            
                         ),
                         RoundedCornerShape(22.dp)
                     )
