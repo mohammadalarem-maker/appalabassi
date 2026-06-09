@@ -43,7 +43,7 @@ class PurchasesViewModel @Inject constructor(
         .stateIn(androidx.lifecycle.viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun addPurchase(supplier: String, cost: Double, items: List<PurchaseItem>, paid: Double) {
-        androidx.lifecycle.viewModelScope.launch {
+        androidx.lifecycle.scope.launch {
             val p = Purchase(
                 id = UUID.randomUUID().toString(),
                 supplierName = supplier,
@@ -61,7 +61,7 @@ class PurchasesViewModel @Inject constructor(
 
 @Composable
 fun PurchasesScreen(vm: PurchasesViewModel = hiltViewModel()) {
-    val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     
     val purchases  by vm.purchases.collectAsState()

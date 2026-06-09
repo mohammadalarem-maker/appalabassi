@@ -42,7 +42,7 @@ class CustomersViewModel @Inject constructor(
     }.stateIn(androidx.lifecycle.viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     fun search(q: String) { _q.value = q }
     fun add(name: String, phone: String, email: String) {
-        androidx.lifecycle.viewModelScope.launch {
+        androidx.lifecycle.scope.launch {
             val c = Customer(UUID.randomUUID().toString(), name, phone, email)
             dao.insertCustomer(c); repo.addCustomer(c)
         }
@@ -51,7 +51,7 @@ class CustomersViewModel @Inject constructor(
 
 @Composable
 fun CustomersScreen(vm: CustomersViewModel = hiltViewModel()) {
-    val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     
     val customers by vm.customers.collectAsState()

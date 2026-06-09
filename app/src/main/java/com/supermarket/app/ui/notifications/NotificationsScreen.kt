@@ -35,7 +35,7 @@ class NotificationsViewModel @Inject constructor(
     val notifications: StateFlow<List<AppNotification>> = _notifications
 
     init {
-        androidx.lifecycle.viewModelScope.launch {
+        androidx.lifecycle.scope.launch {
             repo.getNotifications().collect { _notifications.value = it }
         }
     }
@@ -44,7 +44,7 @@ class NotificationsViewModel @Inject constructor(
 
 @Composable
 fun NotificationsScreen(vm: NotificationsViewModel = hiltViewModel()) {
-    val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     
     val notifications by vm.notifications.collectAsState()
@@ -89,7 +89,7 @@ fun NotificationsScreen(vm: NotificationsViewModel = hiltViewModel()) {
 
 @Composable
 fun NotifCard(notif: AppNotification, dateFormat: SimpleDateFormat) {
-    val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     
     val (color, icon, emoji) = when (notif.type) {
