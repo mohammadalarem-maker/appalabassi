@@ -1,12 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.SuperMarket" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
-    </style>
-    <style name="Theme.SuperMarket.SplashScreen" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#0A1628</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="postSplashScreenTheme">@style/Theme.SuperMarket</item>
+    <style name="Theme.SuperMarket" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">#2196F3</item>
+        <item name="android:colorPrimaryDark">#1976D2</item>
+        <item name="android:colorAccent">#FF4081</item>
     </style>
 </resources>
