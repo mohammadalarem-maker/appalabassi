@@ -52,6 +52,8 @@ class CustomersViewModel @Inject constructor(
 @Composable
 fun CustomersScreen(vm: CustomersViewModel = hiltViewModel()) {
     val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    
     val customers by vm.customers.collectAsState()
     var q         by remember { mutableStateOf("") }
     var showAdd   by remember { mutableStateOf(false) }

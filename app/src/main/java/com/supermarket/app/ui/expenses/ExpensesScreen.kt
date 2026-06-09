@@ -72,6 +72,8 @@ class ExpensesViewModel @Inject constructor(
 @Composable
 fun ExpensesScreen(vm: ExpensesViewModel = hiltViewModel()) {
     val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    
     val expenses    by vm.expenses.collectAsState()
     val totalMonth  by vm.totalMonth.collectAsState()
     val dateFormat  = remember { SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()) }

@@ -62,6 +62,8 @@ class PurchasesViewModel @Inject constructor(
 @Composable
 fun PurchasesScreen(vm: PurchasesViewModel = hiltViewModel()) {
     val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    
     val purchases  by vm.purchases.collectAsState()
     val dateFormat = remember { SimpleDateFormat("yyyy/MM/dd", Locale.getDefault()) }
     var showAdd    by remember { mutableStateOf(false) }

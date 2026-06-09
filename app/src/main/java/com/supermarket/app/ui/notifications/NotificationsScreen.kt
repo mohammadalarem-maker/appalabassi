@@ -45,6 +45,8 @@ class NotificationsViewModel @Inject constructor(
 @Composable
 fun NotificationsScreen(vm: NotificationsViewModel = hiltViewModel()) {
     val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    
     val notifications by vm.notifications.collectAsState()
     val dateFormat    = remember { SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()) }
 
@@ -88,6 +90,8 @@ fun NotificationsScreen(vm: NotificationsViewModel = hiltViewModel()) {
 @Composable
 fun NotifCard(notif: AppNotification, dateFormat: SimpleDateFormat) {
     val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    
     val (color, icon, emoji) = when (notif.type) {
         NotificationType.SALE      -> Triple(SMColors.Primary,       Icons.Filled.ShoppingCart,   "🛒")
         NotificationType.LOW_STOCK -> Triple(SMColors.Warning,       Icons.Filled.Warning,         "⚠️")

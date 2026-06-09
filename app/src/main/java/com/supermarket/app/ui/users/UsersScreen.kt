@@ -67,6 +67,8 @@ class UsersViewModel @Inject constructor(
 @Composable
 fun UsersScreen(viewModel: UsersViewModel = hiltViewModel()) {
     val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
+
+    
     val users       by viewModel.users.collectAsState()
     val me          by viewModel.currentUser.collectAsState()
     val isAdmin     = me?.role == UserRole.ADMIN
