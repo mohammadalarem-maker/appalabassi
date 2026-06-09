@@ -1,0 +1,21 @@
+{
+  "name": "supermarket",
+  "version": "1.0.0",
+  "description": "> تطوير: **كلود** • بواسطة **محمد الصارم**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mohammadalarem-maker/Supermarket.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mohammadalarem-maker/Supermarket/issues"
+  },
+  "homepage": "https://github.com/mohammadalarem-maker/Supermarket#readme"
+}

@@ -1,0 +1,5 @@
+-keep class com.supermarket.app.data.models.** { *; }
+-keep class com.google.firebase.** { *; }
+-keep class com.google.gson.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
