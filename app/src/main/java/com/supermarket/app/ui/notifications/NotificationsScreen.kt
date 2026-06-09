@@ -87,6 +87,7 @@ fun NotificationsScreen(vm: NotificationsViewModel = hiltViewModel()) {
 
 @Composable
 fun NotifCard(notif: AppNotification, dateFormat: SimpleDateFormat) {
+    val viewModelScope = androidx.compose.runtime.rememberCoroutineScope()
     val (color, icon, emoji) = when (notif.type) {
         NotificationType.SALE      -> Triple(SMColors.Primary,       Icons.Filled.ShoppingCart,   "🛒")
         NotificationType.LOW_STOCK -> Triple(SMColors.Warning,       Icons.Filled.Warning,         "⚠️")
