@@ -4,9 +4,7 @@ import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.supermarket.app.data.local.*
 import com.supermarket.app.data.models.*
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,57 +18,21 @@ class SyncRepository @Inject constructor(
     private val expenseDao: ExpenseDao
 ) {
     private val TAG = "SyncRepo"
-
-    suspend fun syncAll() = withContext(Dispatchers.IO) {
-        syncProducts()
-        syncSales()
-        syncCustomers()
-        syncPurchases()
-        syncExpenses()
-    }
+    suspend fun syncAll() { syncProducts(); syncSales(); syncCustomers(); syncPurchases(); syncExpenses() }
 
     private suspend fun syncProducts() {
-        try {
-            val snap = db.collection("products").get().await()
-            val products = snap.toObjects(Product::class.java)
-            productDao.insertProducts(products)
-            Log.d(TAG, "✅ منتجات: ${products.size}")
-        } catch (e: Exception) { Log.e(TAG, "❌ منتجات", e) }
+        try { val l = db.collection("products").get().await().toObjects(Product::class.java); productDao.insertProducts(l) } catch(e:Exception){ Log.e(TAG,"error products",e) }
     }
-
     private suspend fun syncSales() {
-        try {
-            val snap = db.collection("sales").get().await()
-            val sales = snap.toObjects(Sale::class.java)
-            sales.forEach { saleDao.insertSale(it) }
-            Log.d(TAG, "✅ مبيعات: ${sales.size}")
-        } catch (e: Exception) { Log.e(TAG, "❌ مبيعات", e) }
+        try { val l = db.collection("sales").get().await().toObjects(Sale::class.java); l.forEach{saleDao.insertSale(it)} } catch(e:Exception){ Log.e(TAG,"error sales",e) }
     }
-
     private suspend fun syncCustomers() {
-        try {
-            val snap = db.collection("customers").get().await()
-            val customers = snap.toObjects(Customer::class.java)
-            customers.forEach { customerDao.insertCustomer(it) }
-            Log.d(TAG, "✅ عملاء: ${customers.size}")
-        } catch (e: Exception) { Log.e(TAG, "❌ عملاء", e) }
+        try { val l = db.collection("customers").get().await().toObjects(Customer::class.java); l.forEach{customerDao.insertCustomer(it)} } catch(e:Exception){ Log.e(TAG,"error customers",e) }
     }
-
     private suspend fun syncPurchases() {
-        try {
-            val snap = db.collection("purchases").get().await()
-            val purchases = snap.toObjects(Purchase::class.java)
-            purchases.forEach { purchaseDao.insertPurchase(it) }
-            Log.d(TAG, "✅ مشتريات: ${purchases.size}")
-        } catch (e: Exception) { Log.e(TAG, "❌ مشتريات", e) }
+        try { val l = db.collection("purchases").get().await().toObjects(Purchase::class.java); l.forEach{purchaseDao.insertPurchase(it)} } catch(e:Exception){ Log.e(TAG,"error purchases",e) }
     }
-
     private suspend fun syncExpenses() {
-        try {
-            val snap = db.collection("expenses").get().await()
-            val expenses = snap.toObjects(Expense::class.java)
-            expenses.forEach { expenseDao.insertExpense(it) }
-            Log.d(TAG, "✅ مصاريف: ${expenses.size}")
-        } catch (e: Exception) { Log.e(TAG, "❌ مصاريف", e) }
+        try { val l = db.collection("expenses").get().await().toObjects(Expense::class.java); l.forEach{expenseDao.insertExpense(it)} } catch(e:Exception){ Log.e(TAG,"error expenses",e) }
     }
 }

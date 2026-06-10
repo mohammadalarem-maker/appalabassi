@@ -21,26 +21,17 @@ class HomeViewModel @Inject constructor(
     private val prefsManager: PrefsManager,
     private val syncRepository: SyncRepository
 ) : ViewModel() {
-
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser
-
     private val _stats = MutableStateFlow(DashboardStats())
     val stats: StateFlow<DashboardStats> = _stats
-
     private val _lowStockCount = MutableStateFlow(0)
-    val lowStockCount: StateFlow<Int> = _lowStockCount
-
-    private val _unreadNotifications = MutableStateFlow(0)
-    val unreadNotifications: StateFlow<Int> = _unreadNotifications
 
     val lowStockProducts: StateFlow<List<Product>> = productDao.getLowStockProducts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     val recentSales: StateFlow<List<Sale>> = saleDao.getAllSales()
         .map { it.take(10) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     private val _weeklySales = MutableStateFlow<List<Pair<String, Double>>>(emptyList())
     val weeklySales: StateFlow<List<Pair<String, Double>>> = _weeklySales
 
@@ -59,21 +50,12 @@ class HomeViewModel @Inject constructor(
             val cal = Calendar.getInstance()
             val end = cal.timeInMillis
             cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0)
-            val startDay = cal.timeInMillis
-            cal.set(Calendar.DAY_OF_MONTH, 1)
-            val startMonth = cal.timeInMillis
-
-            val todaySales  = saleDao.getTotalSalesAmount(startDay, end) ?: 0.0
-            val todayTx     = saleDao.getSalesCount(startDay, end)
-            val monthSales  = saleDao.getTotalSalesAmount(startMonth, end) ?: 0.0
-            val totalProds  = productDao.getTotalProductsCount()
-
+            val todaySales = saleDao.getTotalSalesAmount(cal.timeInMillis, end) ?: 0.0
+            val todayTx    = saleDao.getSalesCount(cal.timeInMillis, end)
+            val totalProds = productDao.getTotalProductsCount()
             _stats.value = DashboardStats(
-                todaySales        = todaySales,
-                todayTransactions = todayTx,
-                monthSales        = monthSales,
-                totalProducts     = totalProds,
-                lowStockProducts  = _lowStockCount.value
+                todaySales = todaySales, todayTransactions = todayTx,
+                totalProducts = totalProds, lowStockProducts = _lowStockCount.value
             )
         }
     }
@@ -89,17 +71,16 @@ class HomeViewModel @Inject constructor(
 
     private fun loadWeeklyData() {
         viewModelScope.launch {
-            val dayFormat = SimpleDateFormat("EEE", Locale("ar"))
+            val fmt = SimpleDateFormat("EEE", Locale("ar"))
             val result = mutableListOf<Pair<String, Double>>()
             for (i in 6 downTo 0) {
-                val dayCal = Calendar.getInstance()
-                dayCal.add(Calendar.DAY_OF_YEAR, -i)
-                dayCal.set(Calendar.HOUR_OF_DAY, 0); dayCal.set(Calendar.MINUTE, 0); dayCal.set(Calendar.SECOND, 0)
-                val dayStart = dayCal.timeInMillis
-                dayCal.set(Calendar.HOUR_OF_DAY, 23); dayCal.set(Calendar.MINUTE, 59)
-                val dayEnd = dayCal.timeInMillis
-                val amount = saleDao.getTotalSalesAmount(dayStart, dayEnd) ?: 0.0
-                result.add(Pair(dayFormat.format(Date(dayStart)), amount))
+                val c = Calendar.getInstance()
+                c.add(Calendar.DAY_OF_YEAR, -i)
+                c.set(Calendar.HOUR_OF_DAY, 0); c.set(Calendar.MINUTE, 0); c.set(Calendar.SECOND, 0)
+                val dayStart = c.timeInMillis
+                c.set(Calendar.HOUR_OF_DAY, 23); c.set(Calendar.MINUTE, 59)
+                val amount = saleDao.getTotalSalesAmount(dayStart, c.timeInMillis) ?: 0.0
+                result.add(Pair(fmt.format(Date(dayStart)), amount))
             }
             _weeklySales.value = result
         }
