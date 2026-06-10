@@ -26,7 +26,6 @@ import com.supermarket.app.data.local.CustomerDao
 import com.supermarket.app.data.models.Customer
 import com.supermarket.app.data.models.MembershipLevel
 import com.supermarket.app.data.remote.FirebaseRepository
-import com.supermarket.app.ui.inventory.smOutlinedColors
 import com.supermarket.app.ui.theme.SMColors
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*

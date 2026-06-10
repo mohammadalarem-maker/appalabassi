@@ -24,7 +24,6 @@ import androidx.lifecycle.viewModelScope
 import com.supermarket.app.data.local.PurchaseDao
 import com.supermarket.app.data.models.*
 import com.supermarket.app.data.remote.FirebaseRepository
-import com.supermarket.app.ui.inventory.smOutlinedColors
 import com.supermarket.app.ui.theme.SMColors
 import com.supermarket.app.utils.PrefsManager
 import dagger.hilt.android.lifecycle.HiltViewModel

@@ -20,7 +20,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.supermarket.app.data.models.*
-import com.supermarket.app.ui.inventory.smOutlinedColors
 import com.supermarket.app.ui.theme.SMColors
 import java.text.SimpleDateFormat
 import java.util.*
