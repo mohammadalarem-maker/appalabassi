@@ -2,6 +2,7 @@ package com.supermarket.app.data.models
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.firebase.firestore.PropertyName
 
 // ============================
 // USER MODEL
@@ -11,7 +12,10 @@ data class User(
     val username: String = "",
     val email: String = "",
     val role: UserRole = UserRole.CASHIER,
-    val isActive: Boolean = true,
+    @get:PropertyName("active")
+    @set:PropertyName("active")
+    @PropertyName("active")
+    var isActive: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
     val lastLogin: Long = 0L,
     val profileImage: String = ""
@@ -42,13 +46,19 @@ data class Product(
     val minQuantity: Int = 10,
     val description: String = "",
     val imageUrl: String = "",
-    val isActive: Boolean = true,
+    @get:PropertyName("active")
+    @set:PropertyName("active")
+    @PropertyName("active")
+    var isActive: Boolean = true,
     val expiryDate: Long = 0L,        // تاريخ انتهاء الصلاحية
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val location: String = "",         // رف / قسم
     val taxRate: Double = 0.0,
-    val isWeighed: Boolean = false     // منتج يُوزن
+    @get:PropertyName("weighed")
+    @set:PropertyName("weighed")
+    @PropertyName("weighed")
+    var isWeighed: Boolean = false     // منتج يُوزن
 )
 
 enum class ProductCategory(val nameAr: String, val emoji: String, val color: Long) {
