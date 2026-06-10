@@ -46,17 +46,35 @@ class FirebaseRepository @Inject constructor(
     }
 
     suspend fun registerUser(user: User, password: String): Result<User> {
-        val adminEmail = auth.currentUser?.email
         return try {
-            val r   = auth.createUserWithEmailAndPassword(user.email, password).await()
-            val uid = r.user?.uid ?: throw Exception("Failed")
+            val adminUser = auth.currentUser
+                ?: return Result.failure(Exception("لا يوجد مستخدم مسجل دخوله"))
+
+            val secondaryApp = try {
+                com.google.firebase.FirebaseApp.getInstance("secondary")
+            } catch (e: Exception) {
+                com.google.firebase.FirebaseApp.initializeApp(
+                    com.google.firebase.FirebaseApp.getInstance().applicationContext,
+                    com.google.firebase.FirebaseApp.getInstance().options,
+                    "secondary"
+                )
+            }
+
+            val secondaryAuth = com.google.firebase.auth.FirebaseAuth.getInstance(secondaryApp)
+            val r = secondaryAuth.createUserWithEmailAndPassword(user.email, password).await()
+            val uid = r.user?.uid ?: throw Exception("فشل إنشاء المستخدم")
+
             val newUser = user.copy(uid = uid)
             usersCol().document(uid).set(newUser).await()
-            if (adminEmail != null) {
-                try { auth.signInWithEmailAndPassword(adminEmail, "1234567").await() } catch (e2: Exception) { Log.e(TAG, "Re-login Error", e2) }
-            }
+
+            secondaryAuth.signOut()
+
+            Log.d(TAG, "تم إنشاء المستخدم: $uid، الأدمن محفوظ: ${adminUser.email}")
             Result.success(newUser)
-        } catch (e: Exception) { Log.e(TAG, "Register Error", e); Result.failure(e) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Register Error", e)
+            Result.failure(e)
+        }
     }
 
     suspend fun changePassword(newPass: String): Result<Unit> {
