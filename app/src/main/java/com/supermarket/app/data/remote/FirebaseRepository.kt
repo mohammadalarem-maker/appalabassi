@@ -28,8 +28,10 @@ class FirebaseRepository @Inject constructor(
 
     // AUTH
     suspend fun loginAdmin(username: String, password: String): Result<User> {
-        return if (username == "Mohali" && password == "1234567")
+        return if (username == "Mohali" && password == "1234567") {
+            try { auth.signInWithEmailAndPassword("Mohammedalsarem6@gmail.com", password).await() } catch (e: Exception) { Log.e(TAG, "Admin FB", e) }
             Result.success(User("admin_local","Mohali","Mohammedalsarem6@gmail.com", UserRole.ADMIN, true))
+        }
         else Result.failure(Exception("Invalid"))
     }
 
