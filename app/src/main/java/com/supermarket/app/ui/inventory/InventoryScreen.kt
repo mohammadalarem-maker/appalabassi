@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 package com.supermarket.app.ui.inventory
 import com.supermarket.app.ui.smOutlinedColors
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

@@ -3,6 +3,7 @@
 // REPORTS SCREEN
 // ============================
 package com.supermarket.app.ui.reports
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

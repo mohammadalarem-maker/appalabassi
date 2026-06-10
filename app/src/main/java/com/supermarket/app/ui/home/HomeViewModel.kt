@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.home
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

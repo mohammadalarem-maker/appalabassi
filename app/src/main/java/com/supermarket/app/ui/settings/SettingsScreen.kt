@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.settings
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

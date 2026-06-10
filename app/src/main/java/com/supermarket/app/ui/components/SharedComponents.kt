@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.components
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.theme
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable

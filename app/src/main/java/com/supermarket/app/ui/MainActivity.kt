@@ -1,4 +1,5 @@
 package com.supermarket.app.ui
+import com.supermarket.app.ui.smOutlinedColors
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

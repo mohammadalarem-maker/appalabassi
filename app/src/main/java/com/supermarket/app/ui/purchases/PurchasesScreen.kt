@@ -1,5 +1,6 @@
 package com.supermarket.app.ui.purchases
 import com.supermarket.app.ui.smOutlinedColors
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

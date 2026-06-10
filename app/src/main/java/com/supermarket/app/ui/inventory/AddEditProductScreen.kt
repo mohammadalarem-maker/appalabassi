@@ -1,5 +1,6 @@
 package com.supermarket.app.ui.inventory
 import com.supermarket.app.ui.smOutlinedColors
+import com.supermarket.app.ui.smOutlinedColors
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -49,6 +50,7 @@ fun AddEditProductScreen(
 
     val tempFile by remember { mutableStateOf(File(context.cacheDir, "temp_product_capture.jpg")) }
     val tempUri by remember { mutableStateOf(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", tempFile)) }
+import com.supermarket.app.ui.smOutlinedColors
     var bitmapPreview by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(state.imageUrl) {

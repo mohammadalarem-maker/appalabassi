@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.home
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*

@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.navigation
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel

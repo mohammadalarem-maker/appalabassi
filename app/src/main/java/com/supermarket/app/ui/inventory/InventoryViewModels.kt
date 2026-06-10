@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.inventory
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

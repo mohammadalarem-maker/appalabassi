@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.home
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -74,8 +75,8 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val currentUser by viewModel.currentUser.collectAsState()
     val stats by viewModel.stats.collectAsState()
-    val lowStockCount by viewModel.lowStockCount.collectAsState()
-    val unreadNotifications by viewModel.unreadNotifications.collectAsState()
+    // val lowStockCount by viewModel.lowStockCount.collectAsState()
+    // val unreadNotifications by viewModel.unreadNotifications.collectAsState()
 
     // Update badges
     val itemsWithBadge = navItems.map { item ->

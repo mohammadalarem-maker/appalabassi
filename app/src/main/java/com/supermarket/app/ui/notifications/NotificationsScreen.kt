@@ -1,4 +1,5 @@
 package com.supermarket.app.ui.notifications
+import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
