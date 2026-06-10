@@ -17,3 +17,10 @@ fun smOutlinedColors() = OutlinedTextFieldDefaults.colors(
     unfocusedContainerColor = SMColors.BgSurface
 )
 // force rebuild
+
+@Composable
+fun smChipColors() = FilterChipDefaults.filterChipColors(
+    selectedContainerColor = SMColors.Primary,
+    selectedLabelColor = androidx.compose.ui.graphics.Color.White,
+    selectedLeadingIconColor = androidx.compose.ui.graphics.Color.White
+)

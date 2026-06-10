@@ -76,7 +76,7 @@ fun MainScreen(
     val currentUser by viewModel.currentUser.collectAsState()
     val stats by viewModel.stats.collectAsState()
     // val lowStockCount by viewModel.lowStockCount.collectAsState()
-    // val unreadNotifications by viewModel.unreadNotifications.collectAsState()
+    val unreadNotifications = 0
 
     // Update badges
     val itemsWithBadge = navItems.map { item ->
