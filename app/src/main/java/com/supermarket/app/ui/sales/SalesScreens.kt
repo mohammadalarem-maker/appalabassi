@@ -189,7 +189,7 @@ fun SalesScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(saleItem.name, color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text(saleItem.productName, color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                     Text("${saleItem.unitPrice} ر.ي", color = SMColors.Primary, fontSize = 11.sp)
                                 }
                                 
