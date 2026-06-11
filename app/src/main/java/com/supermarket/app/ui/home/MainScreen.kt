@@ -1,6 +1,5 @@
 package com.supermarket.app.ui.home
 import com.supermarket.app.ui.smOutlinedColors
-
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
@@ -39,25 +38,29 @@ data class NavItem(
     val section: String = ""
 )
 
-val navItems = listOf(
-    NavItem("لوحة التحكم",    Icons.Filled.Dashboard,        "home",          SMColors.Primary,      section = "الرئيسية"),
-    NavItem("نقطة البيع",     Icons.Filled.ShoppingCart,     "new_sale",      SMColors.AccentOrange, section = "الرئيسية"),
+// 1. القائمة السفلية (تم نقل العناصر الأربعة هنا)
+val bottomNavItems = listOf(
+    NavItem("الرئيسية",    Icons.Filled.Dashboard,        "home",          SMColors.Primary),
+    NavItem("نقطة البيع",  Icons.Filled.ShoppingCart,     "new_sale",      SMColors.AccentOrange),
+    NavItem("إضافة منتج", Icons.Filled.AddBox,           "add_product",   SMColors.Primary),
+    NavItem("المستخدمون",  Icons.Filled.People,           "users",         SMColors.AccentPurple)
+)
 
+// 2. القائمة الجانبية (بدون العناصر التي تم نقلها للأسفل)
+val drawerNavItems = listOf(
     NavItem("المخزون",        Icons.Filled.Inventory2,       "inventory",     SMColors.AccentCyan,   section = "إدارة المنتجات"),
-    NavItem("إضافة منتج",    Icons.Filled.AddBox,           "add_product",   SMColors.Primary,      section = "إدارة المنتجات"),
     NavItem("المنتجات المنتهية",Icons.Filled.Warning,        "expiring",      SMColors.Warning,      section = "إدارة المنتجات"),
-
     NavItem("سجل المبيعات",   Icons.Filled.Receipt,          "sales",         SMColors.Primary,      section = "المبيعات"),
     NavItem("العملاء",        Icons.Filled.People,           "customers",     SMColors.AccentPurple, section = "المبيعات"),
-
     NavItem("المشتريات",      Icons.Filled.LocalShipping,    "purchases",     SMColors.AccentOrange, section = "المالية"),
     NavItem("المصروفات",      Icons.Filled.AccountBalance,   "expenses",      SMColors.Error,        section = "المالية"),
     NavItem("التقارير",       Icons.Filled.BarChart,         "reports",       SMColors.AccentCyan,   section = "المالية"),
-
-    NavItem("المستخدمون",     Icons.Filled.ManageAccounts,   "users",         SMColors.AccentPurple, section = "الإدارة"),
     NavItem("الإشعارات",      Icons.Filled.Notifications,    "notifications", SMColors.Warning,      section = "الإدارة"),
     NavItem("الإعدادات",      Icons.Filled.Settings,         "settings",      SMColors.TextSecondary,section = "الإدارة"),
 )
+
+// دمج القائمتين فقط لكي يتمكن الـ TopAppBar من قراءة عنوان الشاشة الحالي
+val allNavItems = bottomNavItems + drawerNavItems
 
 // ============================
 // MAIN SCREEN WITH DRAWER
@@ -75,11 +78,10 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
     val currentUser by viewModel.currentUser.collectAsState()
     val stats by viewModel.stats.collectAsState()
-    // val lowStockCount by viewModel.lowStockCount.collectAsState()
     val unreadNotifications = 0
 
     // Update badges
-    val itemsWithBadge = navItems.map { item ->
+    val itemsWithBadge = drawerNavItems.map { item ->
         when (item.route) {
             "notifications" -> item.copy(badge = if (unreadNotifications > 0) "$unreadNotifications" else null)
             "expiring"      -> item.copy(badge = if (stats.expiringProducts > 0) "${stats.expiringProducts}" else null)
@@ -110,8 +112,7 @@ fun MainScreen(
             topBar = {
                 TopAppBar(
                     title = {
-                        // Current page title
-                        val item = itemsWithBadge.find { it.route == currentRoute }
+                        val item = allNavItems.find { it.route == currentRoute }
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             item?.let {
                                 Box(
@@ -128,7 +129,6 @@ fun MainScreen(
                         }
                     },
                     actions = {
-                        // Notifications
                         BadgedBox(badge = {
                             if (unreadNotifications > 0)
                                 Badge(containerColor = SMColors.Error) { Text("$unreadNotifications", fontSize = 9.sp) }
@@ -137,7 +137,6 @@ fun MainScreen(
                                 Icon(Icons.Outlined.Notifications, null, tint = SMColors.TextSecondary)
                             }
                         }
-                        // Quick Sale
                         IconButton(onClick = { onNavigate("new_sale") }) {
                             Icon(Icons.Filled.ShoppingCart, null, tint = SMColors.Primary)
                         }
@@ -147,6 +146,39 @@ fun MainScreen(
                         scrolledContainerColor = SMColors.BgSurface
                     )
                 )
+            },
+            bottomBar = {
+                // إظهار الشريط السفلي فقط إذا لم تكن الشاشة هي شاشة الدخول
+                if (currentRoute != "login") {
+                    NavigationBar(
+                        containerColor = SMColors.BgSurface,
+                        contentColor = SMColors.TextPrimary,
+                        tonalElevation = 8.dp
+                    ) {
+                        bottomNavItems.forEach { item ->
+                            val isSelected = currentRoute == item.route
+                            NavigationBarItem(
+                                selected = isSelected,
+                                onClick = { onNavigate(item.route) },
+                                icon = { Icon(item.icon, contentDescription = item.label) },
+                                label = { 
+                                    Text(
+                                        item.label, 
+                                        fontSize = 10.sp, 
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    ) 
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = item.color,
+                                    selectedTextColor = item.color,
+                                    indicatorColor = item.color.copy(alpha = 0.15f),
+                                    unselectedIconColor = SMColors.TextMuted,
+                                    unselectedTextColor = SMColors.TextMuted
+                                )
+                            )
+                        }
+                    }
+                }
             }
         ) { padding ->
             Box(Modifier.fillMaxSize().padding(padding)) {
@@ -177,12 +209,9 @@ fun AppDrawer(
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState())
         ) {
-            // Header
             DrawerHeader(currentUser)
-
             Spacer(Modifier.height(8.dp))
 
-            // Navigation sections
             sections.forEach { (sectionName, sectionItems) ->
                 if (sectionName.isNotEmpty()) {
                     Spacer(Modifier.height(4.dp))
@@ -212,11 +241,8 @@ fun AppDrawer(
 
             Spacer(Modifier.weight(1f))
             Spacer(Modifier.height(16.dp))
-
-            // Logout button
             DrawerLogoutButton(onLogout)
 
-            // Footer
             Column(
                 Modifier.fillMaxWidth().padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -230,20 +256,17 @@ fun AppDrawer(
 
 @Composable
 fun DrawerHeader(user: com.supermarket.app.data.models.User?) {
-    // Background gradient header
     Box(
         Modifier.fillMaxWidth().background(
             Brush.verticalGradient(listOf(SMColors.BgCard, SMColors.SidebarBg))
         ).padding(20.dp)
     ) {
-        // Decorative circle
         Box(
             Modifier.size(120.dp).offset(x = 180.dp, y = (-30).dp)
                 .background(SMColors.Primary.copy(0.05f), CircleShape)
         )
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            // App logo row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -264,13 +287,10 @@ fun DrawerHeader(user: com.supermarket.app.data.models.User?) {
             }
 
             Divider(color = SMColors.BgCardBorder)
-
-            // User info
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Avatar
                 Box(
                     Modifier.size(42.dp).background(
                         SMColors.Primary.copy(0.15f), CircleShape
@@ -305,7 +325,6 @@ fun DrawerNavItem(item: NavItem, isSelected: Boolean, onClick: () -> Unit) {
         if (isSelected) item.color else SMColors.TextSecondary,
         animationSpec = tween(200), label = "text"
     )
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -317,7 +336,6 @@ fun DrawerNavItem(item: NavItem, isSelected: Boolean, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Icon with colored background when selected
         Box(
             Modifier.size(34.dp).background(
                 if (isSelected) item.color.copy(0.2f) else SMColors.BgCard,
@@ -328,12 +346,9 @@ fun DrawerNavItem(item: NavItem, isSelected: Boolean, onClick: () -> Unit) {
             Icon(item.icon, null, tint = if (isSelected) item.color else SMColors.TextMuted,
                 modifier = Modifier.size(19.dp))
         }
-
         Text(item.label, color = textColor,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             fontSize = 14.sp, modifier = Modifier.weight(1f))
-
-        // Badge
         item.badge?.let { badge ->
             Box(
                 Modifier.background(item.color, RoundedCornerShape(10.dp))
@@ -343,7 +358,6 @@ fun DrawerNavItem(item: NavItem, isSelected: Boolean, onClick: () -> Unit) {
             }
         }
 
-        // Active indicator
         if (isSelected) {
             Box(Modifier.size(4.dp, 20.dp).background(item.color, RoundedCornerShape(2.dp)))
         }
