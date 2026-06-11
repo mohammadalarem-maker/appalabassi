@@ -85,7 +85,8 @@ fun AppNavigation(navController: NavHostController) {
             }) {
                 InventoryScreen(
                     onAddProduct = { navController.navigate(Screen.AddProduct.createRoute()) },
-                    onEditProduct = { navController.navigate(Screen.AddProduct.createRoute(it)) }
+                    onEditProduct = { navController.navigate(Screen.AddProduct.createRoute(it)) },
+                    onNavigateToSales = { navController.navigate(Screen.NewSale.route) }
                 )
             }
         }

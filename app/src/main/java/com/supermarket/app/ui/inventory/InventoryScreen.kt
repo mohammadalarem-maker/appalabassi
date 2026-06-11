@@ -30,6 +30,7 @@ import java.util.*
 fun InventoryScreen(
     onAddProduct: () -> Unit,
     onEditProduct: (String) -> Unit,
+    onNavigateToSales: () -> Unit = {},
     showExpiring: Boolean = false,
     viewModel: InventoryViewModel = hiltViewModel(),
     saleViewModel: NewSaleViewModel = hiltViewModel() // إضافة الـ ViewModel الخاص بالمبيعات هنا للربط
@@ -112,7 +113,7 @@ fun InventoryScreen(
             items(displayed, key = { it.id }) { product ->
                 ProductCard(
                     product  = product,
-                    onProductClick = { saleViewModel.addToCart(product) }, // استدعاء دالة الإضافة عند النقر
+                    onProductClick = { saleViewModel.addToCart(product); onNavigateToSales() }, // استدعاء دالة الإضافة عند النقر
                     onEdit   = { onEditProduct(product.id) },
                     onDelete = { deleteTarget = product }
                 )

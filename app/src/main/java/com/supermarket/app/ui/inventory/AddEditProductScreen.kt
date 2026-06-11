@@ -2,6 +2,8 @@ package com.supermarket.app.ui.inventory
 import com.supermarket.app.ui.smOutlinedColors
 
 import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -73,6 +75,10 @@ fun AddEditProductScreen(
         }
     }
 
+    val cameraPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) cameraLauncher.launch(tempUri) }
+
     LaunchedEffect(productId) { productId?.let { viewModel.loadProduct(it) } }
 
     Column(
@@ -86,7 +92,12 @@ fun AddEditProductScreen(
         }
 
         SMSectionCard("صورة المنتج", Icons.Filled.PhotoCamera) {
-            Box(Modifier.fillMaxWidth().height(180.dp).background(SMColors.BgSurface, RoundedCornerShape(14.dp)).border(1.dp, SMColors.BgCardBorder, RoundedCornerShape(14.dp)).clickable { cameraLauncher.launch(tempUri) }, contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth().height(180.dp).background(SMColors.BgSurface, RoundedCornerShape(14.dp)).border(1.dp, SMColors.BgCardBorder, RoundedCornerShape(14.dp)).clickable {
+                if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
+                    cameraLauncher.launch(tempUri)
+                else
+                    cameraPermLauncher.launch(android.Manifest.permission.CAMERA)
+            }, contentAlignment = Alignment.Center) {
                 if (bitmapPreview != null) {
                     Image(bitmap = bitmapPreview!!.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 } else {

@@ -1,6 +1,5 @@
 package com.supermarket.app.ui.sales
 import com.supermarket.app.ui.smOutlinedColors
-import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -54,7 +53,7 @@ fun NewSaleScreen(
         SaleSuccessDialog(total, changeAmount) { onSaleComplete() }
     }
 
-    Column(Modifier.fillMaxSize().background(SMColors.BgDeep)) {
+    Column(Modifier.fillMaxSize().background(SMColors.BgDeep).imePadding()) {
 
         // Search bar
         OutlinedTextField(
