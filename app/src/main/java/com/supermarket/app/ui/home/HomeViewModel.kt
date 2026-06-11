@@ -1,5 +1,4 @@
 package com.supermarket.app.ui.home
-import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,17 +21,33 @@ class HomeViewModel @Inject constructor(
     private val prefsManager: PrefsManager,
     private val syncRepository: SyncRepository
 ) : ViewModel() {
+
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser
+
     private val _stats = MutableStateFlow(DashboardStats())
     val stats: StateFlow<DashboardStats> = _stats
+
     private val _lowStockCount = MutableStateFlow(0)
 
     val lowStockProducts: StateFlow<List<Product>> = productDao.getLowStockProducts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     val recentSales: StateFlow<List<Sale>> = saleDao.getAllSales()
         .map { it.take(10) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // ==========================================================
+    // الدفق الجديد: جلب المنتجات وترتيبها لعرضها في خلاصة الاستوديو بالداش بورد
+    // ==========================================================
+    val recentProducts: StateFlow<List<Product>> = productDao.getAllProducts()
+        .map { products -> 
+            // ترتيب المنتجات تنازلياً حسب المعرف أو الحركة لتظهر الأخيرة أولاً
+            products.sortedByDescending { it.id }.take(6) 
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    // ==========================================================
+
     private val _weeklySales = MutableStateFlow<List<Pair<String, Double>>>(emptyList())
     val weeklySales: StateFlow<List<Pair<String, Double>>> = _weeklySales
 
