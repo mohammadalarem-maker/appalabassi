@@ -251,9 +251,26 @@ fun StudioProductCard(
             contentAlignment = Alignment.Center
         ) {
             if (product.imageUrl.isNotEmpty()) {
-                // استخدام Coil لتحميل وعرض الصورة الفنية للمنتج
+                // 🚀 الحل السحري: تحويل النص المشفر إلى بايتات ليفهمها Coil
+                val imageRequestData = remember(product.imageUrl) {
+                    if (product.imageUrl.startsWith("http")) {
+                        product.imageUrl // إذا كان رابط إنترنت (مستقبلاً)
+                    } else {
+                        try {
+                            android.util.Base64.decode(product.imageUrl, android.util.Base64.DEFAULT)
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }
+
                 SubcomposeAsyncImage(
-                    model = product.imageUrl,
+                    model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(imageRequestData)
+                        .crossfade(true)
+                        .size(200, 200) // تقليص بالذاكرة لضمان السلاسة
+                        .precision(coil.request.Precision.INEXACT)
+                        .build(),
                     contentDescription = product.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
@@ -265,7 +282,6 @@ fun StudioProductCard(
                     }
                 )
             } else {
-                // واجهة بديلة ذكية: عرض أول حرفين من اسم المنتج بخلفية ملونة جذابة
                 val initials = if (product.name.length >= 2) product.name.take(2) else product.name
                 Box(
                     modifier = Modifier
@@ -274,7 +290,7 @@ fun StudioProductCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = initials.uppercase(Locale.getDefault()),
+                        text = initials.uppercase(java.util.Locale.getDefault()),
                         color = SMColors.Primary,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
