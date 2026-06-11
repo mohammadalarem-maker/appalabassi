@@ -26,6 +26,7 @@ import coil.request.ImageRequest
 import com.supermarket.app.ui.theme.SMColors
 import com.supermarket.app.data.models.Product
 import com.supermarket.app.data.models.PaymentMethod
+import com.supermarket.app.data.models.SaleItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,11 +39,14 @@ fun SalesScreen(
     val products by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val totalAmount by viewModel.total.collectAsState()
+    
+    // جلب قائمة الأصناف الفندقية (SaleItem) من الـ ViewModel
+    val cartItems by viewModel.cartItems.collectAsState()
 
     var showPaySheet by remember { mutableStateOf(false) }
     
-    // فحص ما إذا كانت السلة تحتوي على منتجات بناءً على القيمة الإجمالية
-    val isCartNotEmpty = (totalAmount.toString().toDoubleOrNull() ?: 0.0) > 0.0
+    // التحقق من وجود عناصر مضافة داخل السلة
+    val isCartNotEmpty = cartItems.isNotEmpty()
 
     Scaffold(
         topBar = {
@@ -61,7 +65,6 @@ fun SalesScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SMColors.BgSurface)
             )
         },
-        // إضافة شريط سفلي ثابت يظهر تفاعلياً عند وجود منتجات في السلة لإتمام الدفع للمجموعة كاملة
         bottomBar = {
             if (isCartNotEmpty) {
                 Surface(
@@ -74,7 +77,7 @@ fun SalesScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 12.dp)
-                            .navigationBarsPadding() // رفع الزر عن شريط الإيماءات ونظام الهاتف السفلي 
+                            .navigationBarsPadding()
                             .height(54.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = SMColors.Primary)
@@ -87,7 +90,7 @@ fun SalesScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Filled.ShoppingCart, null, tint = Color.Black)
                                 Spacer(Modifier.width(8.dp))
-                                Text("عرض السلة وإتمام الدفع", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text("عرض السلة وإتمام الدفع (${cartItems.size})", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                             }
                             Text("${totalAmount} ر.ي", color = Color.Black, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
                         }
@@ -103,7 +106,7 @@ fun SalesScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 12.dp)
         ) {
-            // شريط البحث
+            // شريط البحث المرتبط بالـ ViewModel
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearch(it) },
@@ -135,7 +138,7 @@ fun SalesScreen(
         }
     }
 
-    // شيت إجراءات الدفع للمجموعة كاملة
+    // شيت الفاتورة وإجراءات الدفع الفوري
     if (showPaySheet) {
         var paidAmountStr by remember { mutableStateOf("") }
         var selectedMethod by remember { mutableStateOf(PaymentMethod.CASH) }
@@ -149,14 +152,87 @@ fun SalesScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
-                    .padding(top = 8.dp, bottom = 34.dp) // زيادة الحشوة السفلية لرفع كرت تأكيد الدفع عن الخط السفلي للنظام
+                    .padding(top = 8.dp, bottom = 34.dp)
                     .navigationBarsPadding()
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("إجراءات الدفع الفوري", color = SMColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("مراجعة الفاتورة وإجراءات الدفع", color = SMColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
 
-                Text(text = "فاتورة مبيعات متعددة الأصناف", color = SMColors.Primary, fontSize = 16.sp, fontWeight = FontWeight.Black)
+                // ------ قسم استعراض، تعديل وحذف الأصناف المضافة حديثاً ------
+                Text("الأصناف الحالية في الفاتورة:", color = SMColors.TextSecondary, fontSize = 13.sp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(SMColors.BgSurface, shape = RoundedCornerShape(12.dp))
+                        .border(1.dp, SMColors.BgCardBorder, shape = RoundedCornerShape(12.dp))
+                        .padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (cartItems.isEmpty()) {
+                        Text("السلة فارغة حالياً", color = SMColors.TextMuted, fontSize = 13.sp, modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 12.dp))
+                    } else {
+                        cartItems.forEachIndexed { index, saleItem ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // تفاصيل المنتج
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(saleItem.name, color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                    Text("${saleItem.unitPrice} ر.ي", color = SMColors.Primary, fontSize = 11.sp)
+                                }
+                                
+                                // أزرار التحكم بالكمية المجهزة ذكياً في الـ ViewModel (+ و -)
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.padding(horizontal = 8.dp)
+                                ) {
+                                    IconButton(
+                                        onClick = { viewModel.decreaseQty(saleItem.productId) },
+                                        modifier = Modifier.size(26.dp).background(SMColors.BgDeep, RoundedCornerShape(6.dp))
+                                    ) {
+                                        Icon(Icons.Filled.Remove, null, tint = SMColors.TextPrimary, modifier = Modifier.size(14.dp))
+                                    }
+                                    
+                                    Text(
+                                        text = saleItem.quantity.toInt().toString(),
+                                        color = SMColors.TextPrimary,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    
+                                    IconButton(
+                                        onClick = { viewModel.increaseQty(saleItem.productId) },
+                                        modifier = Modifier.size(26.dp).background(SMColors.BgDeep, RoundedCornerShape(6.dp))
+                                    ) {
+                                        Icon(Icons.Filled.Add, null, tint = SMColors.TextPrimary, modifier = Modifier.size(14.dp))
+                                    }
+                                }
+
+                                // زر حذف وإلغاء الصنف الفوري المطابق تماماً للـ ViewModel بالـ ID
+                                IconButton(
+                                    onClick = { 
+                                        viewModel.removeFromCart(saleItem.productId)
+                                        // إذا أصبحت السلة فارغة تماماً بعد الحذف، نغلق شيت الدفع تلقائياً
+                                        if (cartItems.size <= 1) {
+                                            showPaySheet = false
+                                        }
+                                    },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(Icons.Filled.Delete, contentDescription = "إلغاء الصنف", tint = SMColors.Error, modifier = Modifier.size(18.dp))
+                                }
+                            }
+                            if (index < cartItems.lastIndex) {
+                                Divider(color = SMColors.BgCardBorder.copy(alpha = 0.5f), thickness = 0.5.dp)
+                            }
+                        }
+                    }
+                }
+                // ----------------------------------------------------
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("الإجمالي المطلوب:", color = SMColors.TextSecondary, fontSize = 14.sp)
@@ -191,7 +267,7 @@ fun SalesScreen(
                     }
                 }
 
-                // حقل إدخال المبلغ المدفوع
+                // حقل إدخال المبلغ المدفوع لحساب المتبقي تلقائياً
                 OutlinedTextField(
                     value = paidAmountStr,
                     onValueChange = { paidAmountStr = it },
