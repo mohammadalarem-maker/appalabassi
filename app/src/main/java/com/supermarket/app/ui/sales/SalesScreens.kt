@@ -1,5 +1,6 @@
 package com.supermarket.app.ui.sales
 
+import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.supermarket.app.ui.theme.SMColors
 import com.supermarket.app.data.models.Product
 import com.supermarket.app.data.models.PaymentMethod
@@ -39,14 +41,12 @@ fun SalesScreen(
     val products by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val totalAmount by viewModel.total.collectAsState()
-    
-    // جلب قائمة الأصناف الفندقية (SaleItem) من الـ ViewModel
-    val cartItems by viewModel.cartItems.collectAsState()
 
+    val cartItems by viewModel.cartItems.collectAsState()
     var showPaySheet by remember { mutableStateOf(false) }
-    
-    // التحقق من وجود عناصر مضافة داخل السلة
+
     val isCartNotEmpty = cartItems.isNotEmpty()
+    val context = LocalContext.current 
 
     Scaffold(
         topBar = {
@@ -106,12 +106,27 @@ fun SalesScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 12.dp)
         ) {
-            // شريط البحث المرتبط بالـ ViewModel
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearch(it) },
                 placeholder = { Text("ابحث باسم المنتج أو الباركود...", color = SMColors.TextMuted, fontSize = 13.sp) },
                 leadingIcon = { Icon(Icons.Filled.Search, null, tint = SMColors.TextSecondary) },
+                trailingIcon = {
+                    IconButton(onClick = {
+                        val scanner = GmsBarcodeScanning.getClient(context)
+                        scanner.startScan()
+                            .addOnSuccessListener { barcode ->
+                                barcode.rawValue?.let { scannedCode ->
+                                    viewModel.onSearch(scannedCode)
+                                }
+                            }
+                            .addOnFailureListener {
+                                Toast.makeText(context, "تم إلغاء أو تعذر قراءة الباركود", Toast.LENGTH_SHORT).show()
+                            }
+                    }) {
+                        Icon(Icons.Filled.CameraAlt, contentDescription = "مسح الباركود", tint = SMColors.Primary)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 8.dp),
@@ -119,7 +134,6 @@ fun SalesScreen(
                 colors = com.supermarket.app.ui.smOutlinedColors()
             )
 
-            // شبكة عرض المنتجات
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -129,16 +143,13 @@ fun SalesScreen(
                 items(products) { product ->
                     POSProductCard(
                         product = product,
-                        onClick = {
-                            viewModel.addToCart(product) // الإضافة للسلة مباشرة لتتمكن من اختيار عناصر أخرى
-                        }
+                        onClick = { viewModel.addToCart(product) }
                     )
                 }
             }
         }
     }
 
-    // شيت الفاتورة وإجراءات الدفع الفوري
     if (showPaySheet) {
         var paidAmountStr by remember { mutableStateOf("") }
         var selectedMethod by remember { mutableStateOf(PaymentMethod.CASH) }
@@ -158,8 +169,7 @@ fun SalesScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text("مراجعة الفاتورة وإجراءات الدفع", color = SMColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-
-                // ------ قسم استعراض، تعديل وحذف الأصناف المضافة حديثاً ------
+                
                 Text("الأصناف الحالية في الفاتورة:", color = SMColors.TextSecondary, fontSize = 13.sp)
                 Column(
                     modifier = Modifier
@@ -178,13 +188,11 @@ fun SalesScreen(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // تفاصيل المنتج
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(saleItem.name, color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                     Text("${saleItem.unitPrice} ر.ي", color = SMColors.Primary, fontSize = 11.sp)
                                 }
                                 
-                                // أزرار التحكم بالكمية المجهزة ذكياً في الـ ViewModel (+ و -)
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -196,14 +204,7 @@ fun SalesScreen(
                                     ) {
                                         Icon(Icons.Filled.Remove, null, tint = SMColors.TextPrimary, modifier = Modifier.size(14.dp))
                                     }
-                                    
-                                    Text(
-                                        text = saleItem.quantity.toInt().toString(),
-                                        color = SMColors.TextPrimary,
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    
+                                    Text(text = saleItem.quantity.toInt().toString(), color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                                     IconButton(
                                         onClick = { viewModel.increaseQty(saleItem.productId) },
                                         modifier = Modifier.size(26.dp).background(SMColors.BgDeep, RoundedCornerShape(6.dp))
@@ -211,15 +212,11 @@ fun SalesScreen(
                                         Icon(Icons.Filled.Add, null, tint = SMColors.TextPrimary, modifier = Modifier.size(14.dp))
                                     }
                                 }
-
-                                // زر حذف وإلغاء الصنف الفوري المطابق تماماً للـ ViewModel بالـ ID
+                                
                                 IconButton(
-                                    onClick = { 
+                                    onClick = {
                                         viewModel.removeFromCart(saleItem.productId)
-                                        // إذا أصبحت السلة فارغة تماماً بعد الحذف، نغلق شيت الدفع تلقائياً
-                                        if (cartItems.size <= 1) {
-                                            showPaySheet = false
-                                        }
+                                        if (cartItems.size <= 1) showPaySheet = false
                                     },
                                     modifier = Modifier.size(32.dp)
                                 ) {
@@ -232,16 +229,14 @@ fun SalesScreen(
                         }
                     }
                 }
-                // ----------------------------------------------------
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("الإجمالي المطلوب:", color = SMColors.TextSecondary, fontSize = 14.sp)
                     Text("${totalAmount} ر.ي", color = SMColors.Primary, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
-
+                
                 Divider(color = SMColors.BgCardBorder)
-
-                // خيارات الدفع (نقداً / شبكة)
+                
                 Text("طريقة الدفع:", color = SMColors.TextSecondary, fontSize = 14.sp)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     ElevatedButton(
@@ -254,7 +249,7 @@ fun SalesScreen(
                         Spacer(Modifier.width(6.dp))
                         Text("نقداً", color = Color.Black, fontWeight = FontWeight.Bold)
                     }
-
+                    
                     ElevatedButton(
                         onClick = { selectedMethod = PaymentMethod.CARD },
                         modifier = Modifier.weight(1f),
@@ -267,7 +262,6 @@ fun SalesScreen(
                     }
                 }
 
-                // حقل إدخال المبلغ المدفوع لحساب المتبقي تلقائياً
                 OutlinedTextField(
                     value = paidAmountStr,
                     onValueChange = { paidAmountStr = it },
@@ -277,19 +271,18 @@ fun SalesScreen(
                     shape = RoundedCornerShape(12.dp),
                     colors = com.supermarket.app.ui.smOutlinedColors()
                 )
-
+                
                 val totalAmountDouble = totalAmount.toString().toDoubleOrNull() ?: 0.0
                 val paidAmount = paidAmountStr.toDoubleOrNull() ?: totalAmountDouble
                 val change = (paidAmount - totalAmountDouble).coerceAtLeast(0.0)
-
+                
                 if (change > 0) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("المبلغ المتبقي (الفكة):", color = SMColors.TextSecondary, fontSize = 14.sp)
                         Text("${change} ر.ي", color = SMColors.Error, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-
-                // زر التأكيد النهائي وحفظ الفاتورة
+                
                 Button(
                     onClick = {
                         viewModel.completeSale(
