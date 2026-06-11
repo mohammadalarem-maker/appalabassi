@@ -38,9 +38,11 @@ fun SalesScreen(
     val products by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val totalAmount by viewModel.total.collectAsState()
-    
-    var selectedProductForPay by remember { mutableStateOf<Product?>(null) }
+
     var showPaySheet by remember { mutableStateOf(false) }
+    
+    // فحص ما إذا كانت السلة تحتوي على منتجات بناءً على القيمة الإجمالية
+    val isCartNotEmpty = (totalAmount.toString().toDoubleOrNull() ?: 0.0) > 0.0
 
     Scaffold(
         topBar = {
@@ -59,6 +61,40 @@ fun SalesScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SMColors.BgSurface)
             )
         },
+        // إضافة شريط سفلي ثابت يظهر تفاعلياً عند وجود منتجات في السلة لإتمام الدفع للمجموعة كاملة
+        bottomBar = {
+            if (isCartNotEmpty) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = SMColors.BgSurface,
+                    border = BorderStroke(1.dp, SMColors.BgCardBorder)
+                ) {
+                    Button(
+                        onClick = { showPaySheet = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                            .navigationBarsPadding() // رفع الزر عن شريط الإيماءات ونظام الهاتف السفلي 
+                            .height(54.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = SMColors.Primary)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.ShoppingCart, null, tint = Color.Black)
+                                Spacer(Modifier.width(8.dp))
+                                Text("عرض السلة وإتمام الدفع", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            }
+                            Text("${totalAmount} ر.ي", color = Color.Black, fontWeight = FontWeight.ExtraBold, fontSize = 16.sp)
+                        }
+                    }
+                }
+            }
+        },
         containerColor = SMColors.BgDeep
     ) { paddingValues ->
         Column(
@@ -67,7 +103,7 @@ fun SalesScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 12.dp)
         ) {
-            // شريط البحث المرتبط بالـ ViewModel
+            // شريط البحث
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.onSearch(it) },
@@ -80,7 +116,7 @@ fun SalesScreen(
                 colors = com.supermarket.app.ui.smOutlinedColors()
             )
 
-            // شبكة عرض جميع المنتجات مع صورها وأسعارها وكمياتها
+            // شبكة عرض المنتجات
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -91,9 +127,7 @@ fun SalesScreen(
                     POSProductCard(
                         product = product,
                         onClick = {
-                            viewModel.addToCart(product) // إضافة للمنتج في السلة فوراً
-                            selectedProductForPay = product
-                            showPaySheet = true
+                            viewModel.addToCart(product) // الإضافة للسلة مباشرة لتتمكن من اختيار عناصر أخرى
                         }
                     )
                 }
@@ -101,9 +135,8 @@ fun SalesScreen(
         }
     }
 
-    // شيت إجراءات الدفع الفوري
-    if (showPaySheet && selectedProductForPay != null) {
-        val product = selectedProductForPay!!
+    // شيت إجراءات الدفع للمجموعة كاملة
+    if (showPaySheet) {
         var paidAmountStr by remember { mutableStateOf("") }
         var selectedMethod by remember { mutableStateOf(PaymentMethod.CASH) }
 
@@ -115,14 +148,15 @@ fun SalesScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 8.dp, bottom = 34.dp) // زيادة الحشوة السفلية لرفع كرت تأكيد الدفع عن الخط السفلي للنظام
                     .navigationBarsPadding()
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text("إجراءات الدفع الفوري", color = SMColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                
-                Text(text = product.name, color = SMColors.Primary, fontSize = 18.sp, fontWeight = FontWeight.Black)
+
+                Text(text = "فاتورة مبيعات متعددة الأصناف", color = SMColors.Primary, fontSize = 16.sp, fontWeight = FontWeight.Black)
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("الإجمالي المطلوب:", color = SMColors.TextSecondary, fontSize = 14.sp)
@@ -157,7 +191,7 @@ fun SalesScreen(
                     }
                 }
 
-                // حقل إدخال المبلغ المدفوع لحساب المتبقي تلقائياً
+                // حقل إدخال المبلغ المدفوع
                 OutlinedTextField(
                     value = paidAmountStr,
                     onValueChange = { paidAmountStr = it },
@@ -168,8 +202,9 @@ fun SalesScreen(
                     colors = com.supermarket.app.ui.smOutlinedColors()
                 )
 
-                val paidAmount = paidAmountStr.toDoubleOrNull() ?: totalAmount
-                val change = (paidAmount - totalAmount).coerceAtLeast(0.0)
+                val totalAmountDouble = totalAmount.toString().toDoubleOrNull() ?: 0.0
+                val paidAmount = paidAmountStr.toDoubleOrNull() ?: totalAmountDouble
+                val change = (paidAmount - totalAmountDouble).coerceAtLeast(0.0)
 
                 if (change > 0) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -178,7 +213,7 @@ fun SalesScreen(
                     }
                 }
 
-                // زر التأكيد النهائي وحفظ الفاتورة في الهاتف والسيرفر حياً
+                // زر التأكيد النهائي وحفظ الفاتورة
                 Button(
                     onClick = {
                         viewModel.completeSale(
@@ -225,7 +260,6 @@ fun POSProductCard(
                             catch (e: Exception) { null }
                         }
                     }
-
                     SubcomposeAsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(imageRequestData)
