@@ -1,48 +1,50 @@
 package com.supermarket.app.ui.theme
-import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
+// متغير حالة عام للتحكم بالوضع الليلي من أي مكان في التطبيق
+var isAppDarkMode by mutableStateOf(true)
+
 // ============================
 // SUPERMARKET COLOR PALETTE
-// ألوان عصرية داكنة خضراء/زرقاء للسوبرماركت
+// تتغير الألوان هنا تلقائياً بناءً على وضع الثيم
 // ============================
 object SMColors {
-    // Backgrounds
-    val BgDeep        = Color(0xFF0A1628)   // أعمق خلفية - نيلي عميق
-    val BgSurface     = Color(0xFF0F1F3D)   // سطح - نيلي
-    val BgCard        = Color(0xFF152847)   // كارد - أزرق داكن
-    val BgCardAlt     = Color(0xFF1A3258)   // كارد بديل
-    val BgCardBorder  = Color(0xFF1E3A60)   // حدود الكارد
+    // الخلفيات
+    val BgDeep        get() = if (isAppDarkMode) Color(0xFF0A1628) else Color(0xFFF1F5F9)   // نيلي عميق / رمادي فاتح مريح
+    val BgSurface     get() = if (isAppDarkMode) Color(0xFF0F1F3D) else Color(0xFFFFFFFF)   // أزرق نيلي / أبيض ناصع
+    val BgCard        get() = if (isAppDarkMode) Color(0xFF152847) else Color(0xFFFFFFFF)   // كارد داكن / كارد أبيض
+    val BgCardAlt     get() = if (isAppDarkMode) Color(0xFF1A3258) else Color(0xFFF8FAFC)   
+    val BgCardBorder  get() = if (isAppDarkMode) Color(0xFF1E3A60) else Color(0xFFE2E8F0)   
 
-    // Primary - أخضر سوبرماركت
-    val Primary       = Color(0xFF00D26A)   // أخضر حيوي - اللون الرئيسي
+    // ألوان الهوية البصرية (ثابتة للحفاظ على العلامة التجارية)
+    val Primary       = Color(0xFF00D26A)   // أخضر حيوي
     val PrimaryDark   = Color(0xFF00A855)   // أخضر داكن
-    val PrimaryGlow   = Color(0xFF00FF7F)   // أخضر متوهج
+    val PrimaryGlow   = Color(0xFF00FF7F)   
 
-    // Accent
-    val AccentOrange  = Color(0xFFFF6B2B)   // برتقالي - للعروض
-    val AccentYellow  = Color(0xFFFFD60A)   // أصفر - للتحذيرات
+    // الألوان التنبيهية والجمالية
+    val AccentOrange  = Color(0xFFFF6B2B)   // برتقالي للعروض
+    val AccentYellow  = Color(0xFFFFD60A)   // أصفر للتحذيرات
     val AccentPurple  = Color(0xFF9B59B6)   // بنفسجي
     val AccentCyan    = Color(0xFF00E5FF)   // سماوي
 
-    // Text
-    val TextPrimary   = Color(0xFFEEF2FF)   // نص رئيسي
-    val TextSecondary = Color(0xFF94A3B8)   // نص ثانوي
-    val TextMuted     = Color(0xFF4A6080)   // نص خافت
+    // النصوص
+    val TextPrimary   get() = if (isAppDarkMode) Color(0xFFEEF2FF) else Color(0xFF0F172A)   // نص فاتح / نص داكن أسود
+    val TextSecondary get() = if (isAppDarkMode) Color(0xFF94A3B8) else Color(0xFF475569)   
+    val TextMuted     get() = if (isAppDarkMode) Color(0xFF4A6080) else Color(0xFF94A3B8)   
 
-    // Status
+    // الحالات
     val Success       = Color(0xFF00D26A)
     val Warning       = Color(0xFFFFD60A)
     val Error         = Color(0xFFFF4757)
     val Info          = Color(0xFF00E5FF)
 
-    // Category colors
+    // ألوان فئات المنتجات
     val CatFood       = Color(0xFF4CAF50)
     val CatVeg        = Color(0xFF8BC34A)
     val CatDairy      = Color(0xFF03A9F4)
@@ -54,32 +56,34 @@ object SMColors {
     val CatFrozen     = Color(0xFF607D8B)
     val CatSnacks     = Color(0xFFFFC107)
 
-    // Sidebar
-    val SidebarBg     = Color(0xFF0D1E35)
-    val SidebarActive = Color(0xFF152847)
+    // القائمة الجانبية
+    val SidebarBg     get() = if (isAppDarkMode) Color(0xFF0D1E35) else Color(0xFF1E293B)
+    val SidebarActive get() = if (isAppDarkMode) Color(0xFF152847) else Color(0xFFF1F5F9)
 
-    // Login
-    val LoginBg1      = Color(0xFF060D1A)
-    val LoginBg2      = Color(0xFF0A1628)
-    val LoginCard     = Color(0xCC0F1F3D)
+    // شاشة تسجيل الدخول
+    val LoginBg1      get() = if (isAppDarkMode) Color(0xFF060D1A) else Color(0xFFF8FAFC)
+    val LoginBg2      get() = if (isAppDarkMode) Color(0xFF0A1628) else Color(0xFFF1F5F9)
+    val LoginCard     get() = if (isAppDarkMode) Color(0xCC0F1F3D) else Color(0xCCE2E8F0)
 }
 
 private val DarkColorScheme = darkColorScheme(
     primary            = SMColors.Primary,
     onPrimary          = Color.Black,
     primaryContainer   = SMColors.PrimaryDark,
-    onPrimaryContainer = SMColors.TextPrimary,
+    onPrimaryContainer = Color.White,
     secondary          = SMColors.AccentCyan,
-    onSecondary        = Color.Black,
-    background         = SMColors.BgDeep,
-    onBackground       = SMColors.TextPrimary,
-    surface            = SMColors.BgSurface,
-    onSurface          = SMColors.TextPrimary,
-    surfaceVariant     = SMColors.BgCard,
-    onSurfaceVariant   = SMColors.TextSecondary,
-    error              = SMColors.Error,
-    onError            = Color.White,
-    outline            = SMColors.BgCardBorder
+    background         = Color(0xFF0A1628),
+    surface            = Color(0xFF0F1F3D)
+)
+
+private val LightColorScheme = lightColorScheme(
+    primary            = SMColors.PrimaryDark,
+    onPrimary          = Color.White,
+    primaryContainer   = Color(0xFFE6F9F0),
+    onPrimaryContainer = SMColors.PrimaryDark,
+    secondary          = SMColors.AccentCyan,
+    background         = Color(0xFFF1F5F9),
+    surface            = Color(0xFFFFFFFF)
 )
 
 val SMTypography = Typography(
@@ -100,8 +104,9 @@ val SMTypography = Typography(
 
 @Composable
 fun SuperMarketTheme(content: @Composable () -> Unit) {
+    val colors = if (isAppDarkMode) DarkColorScheme else LightColorScheme
     MaterialTheme(
-        colorScheme = DarkColorScheme,
+        colorScheme = colors,
         typography  = SMTypography,
         content     = content
     )
