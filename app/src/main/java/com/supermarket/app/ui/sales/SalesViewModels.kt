@@ -126,6 +126,17 @@ class SalesViewModel @Inject constructor(private val saleDao: SaleDao) : ViewMod
     val sales: StateFlow<List<Sale>> = saleDao.getAllSales()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // الميزة الجديدة: تجميع مبيعات اليوم حسب اسم الكاشير تلقائياً
+    val todaySalesByCashier: StateFlow<Map<String, Double>> = sales.map { list ->
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        val startDay = cal.timeInMillis
+
+        list.filter { it.createdAt >= startDay && it.status == SaleStatus.COMPLETED }
+            .groupBy { it.cashierName.ifEmpty { "غير معروف" } }
+            .mapValues { entry -> entry.value.sumOf { it.total } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     private val _totalToday = MutableStateFlow(0.0)
     val totalToday: StateFlow<Double> = _totalToday
 
