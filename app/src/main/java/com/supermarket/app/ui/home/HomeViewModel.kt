@@ -29,7 +29,6 @@ class HomeViewModel @Inject constructor(
     val stats: StateFlow<DashboardStats> = _stats
 
     private val _lowStockCount = MutableStateFlow(0)
-
     val lowStockProducts: StateFlow<List<Product>> = productDao.getLowStockProducts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -44,7 +43,6 @@ class HomeViewModel @Inject constructor(
     private val _weeklySales = MutableStateFlow<List<Pair<String, Double>>>(emptyList())
     val weeklySales: StateFlow<List<Pair<String, Double>>> = _weeklySales
 
-    // حالات تتبع فحص الباركود للشاشة الرئيسية
     private val _scannedBarcode = MutableStateFlow<String?>(null)
     val scannedBarcode: StateFlow<String?> = _scannedBarcode
 
@@ -61,7 +59,6 @@ class HomeViewModel @Inject constructor(
         observeLowStock()
     }
 
-    // دالة فحص الباركود الآمنة
     fun checkBarcodeOnHome(barcode: String) {
         viewModelScope.launch {
             val allProducts = productDao.getAllProducts().firstOrNull() ?: emptyList()
@@ -69,8 +66,6 @@ class HomeViewModel @Inject constructor(
             if (!exists) {
                 _scannedBarcode.value = barcode
                 _showNotFoundDialog.value = true
-            } else {
-                // الصنف موجود بالفعل (يمكنك لاحقاً إضافة إشعار أو عرض تفاصيل المنتج هنا)
             }
         }
     }
@@ -118,6 +113,14 @@ class HomeViewModel @Inject constructor(
                 result.add(Pair(fmt.format(Date(dayStart)), amount))
             }
             _weeklySales.value = result
+        }
+    }
+
+    // دالة تحديث الفاتورة المضافة حديثاً والتعديل عليها
+    fun updateSale(updatedSale: Sale) {
+        viewModelScope.launch {
+            saleDao.updateSale(updatedSale)
+            loadStats()
         }
     }
 }

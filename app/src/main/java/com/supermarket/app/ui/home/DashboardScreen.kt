@@ -31,6 +31,7 @@ import coil.compose.SubcomposeAsyncImage
 import androidx.compose.ui.layout.ContentScale
 import com.supermarket.app.ui.sales.SalesViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onNavigate: (String) -> Unit,
@@ -41,15 +42,19 @@ fun DashboardScreen(
     val recentSales by viewModel.recentSales.collectAsState()
     val weeklySales by viewModel.weeklySales.collectAsState()
     val recentProducts by viewModel.recentProducts.collectAsState(initial = emptyList())
-                                    
+
     val context = LocalContext.current
     val barcodeScanner = remember { GmsBarcodeScanning.getClient(context) }
     val showNotFoundDialog by viewModel.showNotFoundDialog.collectAsState()
     val scannedBarcode by viewModel.scannedBarcode.collectAsState()
-                                                                                                                              val timeFormat = remember { SimpleDateFormat("hh:mm a", Locale("ar")) }
+
+    val timeFormat = remember { SimpleDateFormat("hh:mm a", Locale("ar")) }
     val dateFormat = remember { SimpleDateFormat("EEEE، d MMMM", Locale("ar")) }
     val now = remember { Date() }
-                             
+
+    // حالة تخزين الفاتورة المراد تعديلها
+    var saleToEdit by remember { mutableStateOf<com.supermarket.app.data.models.Sale?>(null) }
+
     if (showNotFoundDialog && scannedBarcode != null) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissNotFoundDialog() },
@@ -83,7 +88,6 @@ fun DashboardScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // [1] الترحيب والساعة والباركود
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
@@ -106,7 +110,6 @@ fun DashboardScreen(
             }
         }
 
-        // [2] بنر البيع السريع
         item {
             Box(Modifier.fillMaxWidth().clickable { onNavigate("new_sale") }.background(Brush.linearGradient(listOf(SMColors.Primary, SMColors.PrimaryDark, Color(0xFF006B3A))), RoundedCornerShape(22.dp)).padding(20.dp)) {
                 Canvas(Modifier.matchParentSize()) { for (i in 0..5) for (j in 0..2) drawCircle(Color.White.copy(0.06f), 20f, Offset(i * 80f + 20f, j * 60f + 10f)) }
@@ -124,7 +127,6 @@ fun DashboardScreen(
 
         item { Text("الوصول السريع", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
 
-        // [3] المربعين المرئيين الجدد (المنتجات بصورها والأقسام بأيقوناتها)
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ProductVisualCard(recentProducts, stats.totalProducts, Modifier.weight(1f)) { onNavigate("inventory") }
@@ -134,7 +136,6 @@ fun DashboardScreen(
 
         item { Text("مؤشرات النظام", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
 
-        // [4] إحصائيات المبيعات والتحذيرات تحتهما
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 KpiCard("مبيعات اليوم", "${"%.1f".format(stats.todaySales)} ر", "${stats.todayTransactions} فاتورة", Icons.Filled.TrendingUp, SMColors.Primary, Modifier.weight(1f))
@@ -142,7 +143,6 @@ fun DashboardScreen(
             }
         }
 
-        // [5] مبيعات الشهر
         item {
             Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = SMColors.BgCard), border = BorderStroke(1.dp, SMColors.AccentCyan.copy(0.15f))) {
                 Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -155,34 +155,39 @@ fun DashboardScreen(
             }
         }
 
-        // الميزة الجديدة: بطاقة تقسيم المبيعات لليوم حسب الموظفين
         item { CashierSalesBreakdown() }
 
-        // [6] المخطط البياني
         item { SalesChartCard(weeklySales) }
 
-        // [7] تفاصيل التحذيرات
         if (lowStockProducts.isNotEmpty()) {
             item { LowStockAlert(lowStockProducts.take(3)) { onNavigate("inventory") } }
         }
 
-        // [8] آخر المبيعات
         if (recentSales.isNotEmpty()) {
             item { Text("آخر العمليات", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
-            items(recentSales.take(4)) { sale -> RecentSaleRow(sale) }
+            items(recentSales.take(4)) { sale -> RecentSaleRow(sale) { saleToEdit = sale } }
             item { TextButton(onClick = { onNavigate("sales") }, modifier = Modifier.fillMaxWidth()) { Text("عرض السجل ←", color = SMColors.Primary, fontWeight = FontWeight.SemiBold) } }
         }
+
         item { Spacer(Modifier.height(16.dp)) }
+    }
+
+    // إظهار نافذة التعديل عند النقر على فاتورة
+    saleToEdit?.let { sale ->
+        SaleDetailsEditDialog(
+            sale = sale,
+            onDismiss = { saleToEdit = null },
+            onSaveChanges = { updatedSale ->
+                viewModel.updateSale(updatedSale)
+                saleToEdit = null
+            }
+        )
     }
 }
 
-// ==========================================
-// ميزة تقسيم المبيعات الحية حسب الموظف
-// ==========================================
 @Composable
 fun CashierSalesBreakdown(viewModel: SalesViewModel = hiltViewModel()) {
     val cashierSales by viewModel.todaySalesByCashier.collectAsState()
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -190,39 +195,21 @@ fun CashierSalesBreakdown(viewModel: SalesViewModel = hiltViewModel()) {
         border = BorderStroke(1.dp, SMColors.BgCardBorder)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(SMColors.Primary.copy(0.12f), RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    Box(modifier = Modifier.size(40.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
                         Icon(Icons.Filled.People, null, tint = SMColors.Primary, modifier = Modifier.size(22.dp))
                     }
-                    Column {
-                        Text("تقسيم مبيعات اليوم حسب الموظفين", color = SMColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    }
+                    Column { Text("تقسيم مبيعات اليوم حسب الموظفين", color = SMColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold) }
                 }
             }
-            
+
             Spacer(modifier = Modifier.height(12.dp))
-            
             if (cashierSales.isEmpty()) {
                 Text("لا توجد عمليات بيع مسجلة للموظفين اليوم بعد.", color = SMColors.TextMuted, fontSize = 12.sp)
             } else {
                 cashierSales.forEach { (cashierName, totalAmount) ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 6.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Filled.Person, null, tint = SMColors.TextSecondary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
@@ -236,9 +223,6 @@ fun CashierSalesBreakdown(viewModel: SalesViewModel = hiltViewModel()) {
     }
 }
 
-// ==========================================
-// تصميم مربع المنتجات الذي يحتوي على 4 صور مصغرة
-// ==========================================
 @Composable
 fun ProductVisualCard(products: List<com.supermarket.app.data.models.Product>, totalCount: Int, modifier: Modifier, onClick: () -> Unit) {
     Card(modifier = modifier.aspectRatio(1f).clickable(onClick = onClick), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = SMColors.BgCard), border = BorderStroke(1.dp, SMColors.BgCardBorder)) {
@@ -247,7 +231,6 @@ fun ProductVisualCard(products: List<com.supermarket.app.data.models.Product>, t
                 Text("المنتجات", color = SMColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Icon(Icons.Filled.Inventory2, null, tint = SMColors.AccentPurple, modifier = Modifier.size(16.dp))
             }
-
             val items = products.take(4)
             Column(Modifier.fillMaxWidth().aspectRatio(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -282,9 +265,6 @@ fun MiniProductImage(product: com.supermarket.app.data.models.Product?, modifier
     }
 }
 
-// ==========================================
-// تصميم مربع الأقسام الذي يحتوي على 4 أيقونات مصغرة
-// ==========================================
 @Composable
 fun CategoryVisualCard(categories: List<ProductCategory>, modifier: Modifier, onClick: () -> Unit) {
     Card(modifier = modifier.aspectRatio(1f).clickable(onClick = onClick), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = SMColors.BgCard), border = BorderStroke(1.dp, SMColors.BgCardBorder)) {
@@ -293,7 +273,6 @@ fun CategoryVisualCard(categories: List<ProductCategory>, modifier: Modifier, on
                 Text("الأقسام", color = SMColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 Icon(Icons.Filled.Widgets, null, tint = SMColors.AccentCyan, modifier = Modifier.size(16.dp))
             }
-
             val items = categories.take(4)
             Column(Modifier.fillMaxWidth().aspectRatio(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -317,9 +296,6 @@ fun MiniCategoryBox(cat: ProductCategory?, modifier: Modifier) {
     }
 }
 
-// ==========================================
-// باقي الدوال المساعدة (مبيعات، تحذيرات، رسوم)
-// ==========================================
 @Composable
 fun KpiCard(label: String, value: String, sub: String, icon: ImageVector, color: Color, modifier: Modifier, onClick: (() -> Unit)? = null) {
     Card(modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = SMColors.BgCard), border = BorderStroke(1.dp, color.copy(0.2f))) {
@@ -384,9 +360,9 @@ fun LowStockAlert(products: List<com.supermarket.app.data.models.Product>, onCli
 }
 
 @Composable
-fun RecentSaleRow(sale: com.supermarket.app.data.models.Sale) {
+fun RecentSaleRow(sale: com.supermarket.app.data.models.Sale, onClick: () -> Unit) {
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
-    Row(Modifier.fillMaxWidth().background(SMColors.BgCard, RoundedCornerShape(14.dp)).border(1.dp, SMColors.BgCardBorder, RoundedCornerShape(14.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).background(SMColors.BgCard, RoundedCornerShape(14.dp)).border(1.dp, SMColors.BgCardBorder, RoundedCornerShape(14.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(36.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Receipt, null, tint = SMColors.Primary, modifier = Modifier.size(18.dp)) }
             Column {
@@ -399,4 +375,68 @@ fun RecentSaleRow(sale: com.supermarket.app.data.models.Sale) {
             Text(sale.paymentMethod.nameAr, color = SMColors.TextMuted, fontSize = 10.sp)
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SaleDetailsEditDialog(
+    sale: com.supermarket.app.data.models.Sale,
+    onDismiss: () -> Unit,
+    onSaveChanges: (com.supermarket.app.data.models.Sale) -> Unit
+) {
+    var editableItems by remember { mutableStateOf(sale.items) }
+    var paymentMethod by remember { mutableStateOf(sale.paymentMethod) }
+
+    val updatedTotal = editableItems.sumOf { it.quantity * it.unitPrice }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = SMColors.BgCard,
+        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        title = {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("تفاصيل الفاتورة", color = SMColors.TextPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, null, tint = SMColors.TextSecondary) }
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("رقم الفاتورة: ${sale.invoiceNumber}", color = SMColors.TextMuted, fontSize = 12.sp)
+                }
+
+                LazyColumn(modifier = Modifier.heightIn(max = 240.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(editableItems) { item ->
+                        Row(Modifier.fillMaxWidth().background(SMColors.BgSurface, RoundedCornerShape(10.dp)).padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.productName, color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                                Text("${item.unitPrice} ر.ي", color = SMColors.TextSecondary, fontSize = 11.sp)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                IconButton(onClick = { if (item.quantity > 1) { editableItems = editableItems.map { if (it.productId == item.productId) it.copy(quantity = it.quantity - 1) else it } } }, modifier = Modifier.size(28.dp).background(SMColors.BgDeep, RoundedCornerShape(6.dp))) {
+                                    Icon(Icons.Filled.Remove, null, tint = SMColors.TextPrimary, modifier = Modifier.size(16.dp))
+                                }
+                                Text("${item.quantity.toInt()}", color = SMColors.TextPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.width(20.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                IconButton(onClick = { editableItems = editableItems.map { if (it.productId == item.productId) it.copy(quantity = it.quantity + 1) else it } }, modifier = Modifier.size(28.dp).background(SMColors.Primary.copy(0.2f), RoundedCornerShape(6.dp))) {
+                                    Icon(Icons.Filled.Add, null, tint = SMColors.Primary, modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+                Divider(color = SMColors.BgCardBorder)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("الإجمالي الجديد:", color = SMColors.TextPrimary, fontWeight = FontWeight.SemiBold)
+                    Text("$updatedTotal ر.ي", color = SMColors.Primary, fontWeight = FontWeight.Black)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onSaveChanges(sale.copy(items = editableItems, total = updatedTotal, paymentMethod = paymentMethod)) },
+                colors = ButtonDefaults.buttonColors(containerColor = SMColors.Primary)
+            ) { Text("حفظ التعديلات", color = Color.Black, fontWeight = FontWeight.Bold) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("إلغاء", color = SMColors.TextSecondary) } }
+    )
 }
