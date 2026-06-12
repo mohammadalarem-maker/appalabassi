@@ -48,7 +48,12 @@ class UsersViewModel @Inject constructor(
 
     fun addUser(username: String, email: String, password: String, role: UserRole, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
-            val result = firebaseRepository.registerUser(User(username = username, email = email, role = role), password)
+            val cleanEmail = email.trim().lowercase()
+            val cleanUsername = username.trim()
+            val result = firebaseRepository.registerUser(
+                User(username = cleanUsername, email = cleanEmail, role = role),
+                password
+            )
             if (result.isSuccess) {
                 onResult(true, "تمت إضافة المستخدم بنجاح")
             } else {
@@ -124,7 +129,7 @@ fun UsersScreen(viewModel: UsersViewModel = hiltViewModel()) {
                         }
                         if (isAdmin && user.role != UserRole.ADMIN) {
                             IconButton({ viewModel.deactivate(user.uid) }, Modifier.size(32.dp)) {
-                                Icon(if (user.isActive) Icons.Filled.Block else Icons.Filled.CheckCircle, null, tint = if (user.isActive) SMColors.Error else SMColors.Primary, modifier = Modifier.size(18.dp))
+                                Icon(if (user.isActive) Icons.Filled.Block else Icons.Filled.CheckCircle, null, tint = if (user.isActive) SMColors.Warning else SMColors.Primary, modifier = Modifier.size(18.dp))
                             }
                             IconButton({ userToDelete = user }, Modifier.size(32.dp)) {
                                 Icon(Icons.Filled.Delete, null, tint = SMColors.Error, modifier = Modifier.size(18.dp))
@@ -136,24 +141,18 @@ fun UsersScreen(viewModel: UsersViewModel = hiltViewModel()) {
         }
     }
 
-    // حوار تأكيد الحذف
     userToDelete?.let { user ->
         AlertDialog(
             onDismissRequest = { userToDelete = null },
             containerColor = SMColors.BgCard,
             title = { Text("حذف المستخدم", color = SMColors.Error, fontWeight = FontWeight.Bold) },
-            text = { Text("هل أنت متأكد من حذف المستخدم \"${user.username}\"؟\nسيتم حذفه نهائياً ولا يمكن التراجع.", color = SMColors.TextPrimary) },
+            text = { Text("هل أنت متأكد من حذف \"${user.username}\"؟", color = SMColors.TextPrimary) },
             confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.deleteUser(user.uid) { userToDelete = null }
-                    },
+                Button(onClick = { viewModel.deleteUser(user.uid) { userToDelete = null } },
                     colors = ButtonDefaults.buttonColors(containerColor = SMColors.Error)
                 ) { Text("حذف", color = Color.White) }
             },
-            dismissButton = {
-                TextButton({ userToDelete = null }) { Text("إلغاء", color = SMColors.TextSecondary) }
-            }
+            dismissButton = { TextButton({ userToDelete = null }) { Text("إلغاء", color = SMColors.TextSecondary) } }
         )
     }
 
@@ -173,13 +172,51 @@ fun UsersScreen(viewModel: UsersViewModel = hiltViewModel()) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (addError.isNotEmpty()) {
-                        Text(addError, color = SMColors.Error, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Card(colors = CardDefaults.cardColors(containerColor = SMColors.Error.copy(0.1f)),
+                            border = BorderStroke(1.dp, SMColors.Error.copy(0.3f))) {
+                            Text(addError, color = SMColors.Error, fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold, modifier = Modifier.padding(8.dp))
+                        }
                     }
-                    OutlinedTextField(uname, { uname = it }, label = { Text("اسم المستخدم") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = smOutlinedColors(), enabled = !isSubmitting)
-                    OutlinedTextField(email, { email = it }, label = { Text("البريد الإلكتروني") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = smOutlinedColors(), enabled = !isSubmitting)
-                    OutlinedTextField(pass, { pass = it }, label = { Text("كلمة المرور") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), colors = smOutlinedColors(), visualTransformation = PasswordVisualTransformation(), enabled = !isSubmitting)
+                    OutlinedTextField(
+                        value = uname,
+                        onValueChange = { uname = it.trim() },
+                        label = { Text("اسم المستخدم (بدون مسافات أو رموز)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = smOutlinedColors(),
+                        enabled = !isSubmitting,
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it.trim() },
+                        label = { Text("البريد الإلكتروني") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = smOutlinedColors(),
+                        enabled = !isSubmitting,
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = pass,
+                        onValueChange = { pass = it },
+                        label = { Text("كلمة المرور (6 أحرف على الأقل)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = smOutlinedColors(),
+                        visualTransformation = PasswordVisualTransformation(),
+                        enabled = !isSubmitting,
+                        singleLine = true
+                    )
                     ExposedDropdownMenuBox(exp, { exp = it }) {
-                        OutlinedTextField(role.nameAr, {}, readOnly = true, label = { Text("الصلاحية") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(exp) }, modifier = Modifier.fillMaxWidth().menuAnchor(), shape = RoundedCornerShape(12.dp), colors = smOutlinedColors(), enabled = !isSubmitting)
+                        OutlinedTextField(role.nameAr, {}, readOnly = true,
+                            label = { Text("الصلاحية") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(exp) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = smOutlinedColors(),
+                            enabled = !isSubmitting)
                         ExposedDropdownMenu(exp, { exp = false }, modifier = Modifier.background(SMColors.BgCard)) {
                             UserRole.values().filter { it != UserRole.ADMIN }.forEach { r ->
                                 DropdownMenuItem(text = { Text(r.nameAr, color = SMColors.TextPrimary) }, onClick = { role = r; exp = false })
@@ -191,10 +228,23 @@ fun UsersScreen(viewModel: UsersViewModel = hiltViewModel()) {
             confirmButton = {
                 Button(
                     onClick = {
-                        if (uname.isBlank() || email.isBlank() || pass.isBlank()) { addError = "الرجاء تعبئة جميع الحقول المطلوبة"; return@Button }
-                        if (pass.length < 6) { addError = "يجب أن تكون كلمة المرور 6 أحرف على الأقل"; return@Button }
-                        isSubmitting = true; addError = ""
-                        viewModel.addUser(uname, email, pass, role) { success, message ->
+                        val cleanEmail = email.trim().lowercase()
+                        val cleanUsername = uname.trim()
+                        if (cleanUsername.isBlank() || cleanEmail.isBlank() || pass.isBlank()) {
+                            addError = "الرجاء تعبئة جميع الحقول"
+                            return@Button
+                        }
+                        if (!cleanEmail.contains("@") || !cleanEmail.contains(".")) {
+                            addError = "البريد الإلكتروني غير صحيح"
+                            return@Button
+                        }
+                        if (pass.length < 6) {
+                            addError = "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
+                            return@Button
+                        }
+                        isSubmitting = true
+                        addError = ""
+                        viewModel.addUser(cleanUsername, cleanEmail, pass, role) { success, message ->
                             isSubmitting = false
                             if (success) showAdd = false else addError = message
                         }
