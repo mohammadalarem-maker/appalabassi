@@ -70,7 +70,6 @@ fun DashboardScreen(
                 Button(
                     onClick = {
                         viewModel.dismissNotFoundDialog()
-                        // الانتقال لصفحة الإضافة مع تمرير الرقم تلقائياً
                         onNavigate(Screen.AddProduct.createRoute(barcode = scannedBarcode))
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = SMColors.Primary)
@@ -91,7 +90,7 @@ fun DashboardScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Greeting + Date + Barcode Scanner Action
+        // [أولاً] الترحيب + التاريخ + البحث الذكي بالباركود
         item {
             Row(
                 Modifier.fillMaxWidth(),
@@ -107,7 +106,6 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // زر قارئ الباركود الذكي المضاف حديثاً في أعلى الصفحة الرئيسية
                     IconButton(
                         onClick = {
                             barcodeScanner.startScan()
@@ -124,7 +122,7 @@ fun DashboardScreen(
                         Icon(Icons.Filled.QrCodeScanner, contentDescription = "بحث بالباركود", tint = SMColors.Primary, modifier = Modifier.size(20.dp))
                     }
 
-                    // Clock
+                    // الساعة الرقمية
                     Box(
                         Modifier.background(SMColors.BgCard, RoundedCornerShape(14.dp))
                             .border(1.dp, SMColors.BgCardBorder, RoundedCornerShape(14.dp))
@@ -136,7 +134,7 @@ fun DashboardScreen(
             }
         }
 
-        // Quick Sale Banner
+        // [ثانياً] بنر بدء عملية بيع جديدة
         item {
             Box(
                 Modifier
@@ -172,36 +170,44 @@ fun DashboardScreen(
             }
         }
 
-        // KPI Row 1
+        // عنوان لوحة التحكم السريعة
         item {
-            Text("إحصائيات اليوم", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
+            Text("المؤشرات الرئيسية", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
+        }
+
+        // [ثالثاً] تقسيم المربعات الأربعة المحدث حسب طلبك ورسمتك (المنتجات، الأقسام، مبيعات اليوم، التحذيرات)
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // مربع 1 (أعلى يمين): المنتجات النشطة
+                KpiCard(
+                    "المنتجات النشطة",
+                    "${stats.totalProducts}",
+                    "صنف متاح بالنظام",
+                    Icons.Filled.Inventory2, SMColors.AccentPurple, Modifier.weight(1f),
+                    onClick = { onNavigate("inventory") }
+                )
+                // مربع 2 (أعلى يسار): الأقسام
+                KpiCard(
+                    "الأقسام",
+                    "${ProductCategory.values().size}",
+                    "تصفح تصنيفات الفئات",
+                    Icons.Filled.Widgets, SMColors.AccentCyan, Modifier.weight(1f),
+                    onClick = { onNavigate("inventory") }
+                )
+            }
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // مربع 3 (أسفل يمين): مبيعات اليوم
                 KpiCard(
                     "مبيعات اليوم",
                     "${"%.1f".format(stats.todaySales)} ر",
                     "${stats.todayTransactions} فاتورة",
                     Icons.Filled.TrendingUp, SMColors.Primary, Modifier.weight(1f)
                 )
+                // مربع 4 (أسفل يسار): التحذيرات
                 KpiCard(
-                    "مبيعات الشهر",
-                    "${"%.0f".format(stats.monthSales)} ر",
-                    "هذا الشهر",
-                    Icons.Filled.BarChart, SMColors.AccentCyan, Modifier.weight(1f)
-                )
-            }
-        }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                KpiCard(
-                    "المنتجات",
-                    "${stats.totalProducts}",
-                    "صنف نشط",
-                    Icons.Filled.Inventory2, SMColors.AccentPurple, Modifier.weight(1f)
-                )
-                KpiCard(
-                    "تحذيرات",
+                    "التحذيرات",
                     "${stats.lowStockProducts}",
                     "مخزون منخفض",
                     Icons.Filled.Warning,
@@ -212,12 +218,47 @@ fun DashboardScreen(
             }
         }
 
-        // Mini bar chart
+        // [رابعاً] إعادة تنسيق أسفل الشاشة المختار والأفضل احترافياً
+        item {
+            Text("التقارير المالية والبيانية", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
+        }
+
+        // بنر عريض ومميز لمبيعات الشهر لضمان التوازن البصري وعدم فقدان المؤشر
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = SMColors.BgCard),
+                border = BorderStroke(1.dp, SMColors.AccentCyan.copy(0.15f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(40.dp).background(SMColors.AccentCyan.copy(0.12f), RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Filled.BarChart, null, tint = SMColors.AccentCyan, modifier = Modifier.size(22.dp))
+                        }
+                        Column {
+                            Text("إجمالي مبيعات الشهر الحالي", color = SMColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                            Text("التقرير التراكمي المحدث", color = SMColors.TextMuted, fontSize = 11.sp)
+                        }
+                    }
+                    Text("${"%.0f".format(stats.monthSales)} ر", color = SMColors.AccentCyan, fontWeight = FontWeight.Black, fontSize = 20.sp)
+                }
+            }
+        }
+
+        // المخطط البياني الأسبوعي للمبيعات
         item {
             SalesChartCard(weeklySales)
         }
 
-        // Active Products Section
+        // قسم استوديو المنتجات النشطة مؤخراً (تحميل ذكي مرئي)
         item {
             Text(
                 text = "المنتجات النشطة مؤخراً",
@@ -253,7 +294,7 @@ fun DashboardScreen(
             }
         }
 
-        // Category quick access
+        // الأقسام السريعة (شيبس دائرية للتصفح السريع)
         item {
             Text("الأقسام", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
         }
@@ -265,17 +306,17 @@ fun DashboardScreen(
             }
         }
 
-        // Low stock alert
+        // كرت تفاصيل المخزون المنخفض الفعلي (إذا وجد)
         if (lowStockProducts.isNotEmpty()) {
             item {
                 LowStockAlert(lowStockProducts.take(3)) { onNavigate("inventory") }
             }
         }
 
-        // Recent sales
+        // قائمة آخر الفواتير والمبيعات في تذييل الصفحة
         if (recentSales.isNotEmpty()) {
             item {
-                Text("آخر المبيعات", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
+                Text("آخر العمليات والبيع المباشر", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.5.sp)
             }
             items(recentSales.take(4)) { sale ->
                 RecentSaleRow(sale)
@@ -285,7 +326,7 @@ fun DashboardScreen(
                     onClick = { onNavigate("sales") },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("عرض كل المبيعات ←", color = SMColors.Primary, fontWeight = FontWeight.SemiBold)
+                    Text("عرض سجل المبيعات الكامل ←", color = SMColors.Primary, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
