@@ -2,7 +2,6 @@ package com.supermarket.app.ui.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.supermarket.app.data.models.User
 import com.supermarket.app.data.models.UserRole
 import com.supermarket.app.data.remote.FirebaseRepository
 import com.supermarket.app.utils.PrefsManager
@@ -18,8 +17,8 @@ class LoginViewModel @Inject constructor(
     private val prefs: PrefsManager
 ) : ViewModel() {
 
-    private val _currentUser = MutableStateFlow<User?>(null)
-    val currentUser: StateFlow<User?> = _currentUser
+    private val _currentUser = MutableStateFlow<com.supermarket.app.data.models.User?>(null)
+    val currentUser: StateFlow<com.supermarket.app.data.models.User?> = _currentUser
 
     fun login(
         username: String,
@@ -32,19 +31,11 @@ class LoginViewModel @Inject constructor(
         }
         viewModelScope.launch {
             try {
-                // 1. تنظيف المدخلات بذكاء
-                val cleanUsername = username.trim().lowercase().replace(" ", "")
+                val cleanInput = username.trim()
                 val cleanPassword = password.trim()
-                
-                // 2. معالجة البريد الإلكتروني لتجنب تكرار علامة @
-                val email = if (cleanUsername.contains("@")) {
-                    cleanUsername
-                } else {
-                    "$cleanUsername@supermarket.app"
-                }
 
                 // ① فحص الأدمن المحلي أولاً
-                val local = repo.loginAdmin(cleanUsername, cleanPassword)
+                val local = repo.loginAdmin(cleanInput, cleanPassword)
                 if (local.isSuccess) {
                     val user = local.getOrNull()!!
                     _currentUser.value = user
@@ -52,17 +43,30 @@ class LoginViewModel @Inject constructor(
                     onResult(true, user.role == UserRole.ADMIN, null)
                     return@launch
                 }
-                
-                // ② تسجيل الدخول عبر Firebase باستخدام البيانات المنظفة
-                val fb = repo.loginWithEmailPassword(email, cleanPassword)
-                if (fb.isSuccess) {
-                    val user = fb.getOrNull()!!
+
+                // ② إذا كان إيميل ادخل مباشرة
+                if (cleanInput.contains("@")) {
+                    val fb = repo.loginWithEmailPassword(cleanInput.lowercase(), cleanPassword)
+                    if (fb.isSuccess) {
+                        val user = fb.getOrNull()!!
+                        _currentUser.value = user
+                        prefs.saveUser(user)
+                        onResult(true, user.role == UserRole.ADMIN, null)
+                        return@launch
+                    }
+                }
+
+                // ③ البحث بالـ username في Firestore والدخول بإيميله الحقيقي
+                val byUsername = repo.loginWithUsername(cleanInput, cleanPassword)
+                if (byUsername.isSuccess) {
+                    val user = byUsername.getOrNull()!!
                     _currentUser.value = user
                     prefs.saveUser(user)
                     onResult(true, user.role == UserRole.ADMIN, null)
                 } else {
                     onResult(false, false, "بيانات الدخول غير صحيحة، تأكد من الاسم وكلمة المرور")
                 }
+
             } catch (e: Exception) {
                 onResult(false, false, "حدث خطأ في الاتصال: ${e.message}")
             }

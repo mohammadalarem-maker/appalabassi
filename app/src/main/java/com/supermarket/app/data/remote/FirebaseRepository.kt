@@ -45,6 +45,25 @@ class FirebaseRepository @Inject constructor(
         } catch (e: Exception) { Log.e(TAG, "Login Error", e); Result.failure(e) }
     }
 
+    suspend fun loginWithUsername(username: String, password: String): Result<User> {
+        return try {
+            val snapshot = usersCol()
+                .whereEqualTo("username", username)
+                .limit(1)
+                .get()
+                .await()
+            if (snapshot.isEmpty) return Result.failure(Exception("User not found"))
+            val user = snapshot.documents[0].toObject(User::class.java)
+                ?: return Result.failure(Exception("Invalid user data"))
+            val authResult = auth.signInWithEmailAndPassword(user.email, password).await()
+            if (authResult.user != null) Result.success(user)
+            else Result.failure(Exception("Auth failed"))
+        } catch (e: Exception) {
+            Log.e(TAG, "LoginByUsername Error", e)
+            Result.failure(e)
+        }
+    }
+
     suspend fun registerUser(user: User, password: String): Result<User> {
         return try {
             val adminUser = auth.currentUser
