@@ -56,7 +56,6 @@ fun AddEditProductScreen(
     val tempUri by remember { mutableStateOf(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", tempFile)) }
     var bitmapPreview by remember { mutableStateOf<Bitmap?>(null) }
 
-    // تعبئة الباركود تلقائياً إذا كان ممرراً من شاشة أخرى
     LaunchedEffect(barcode) {
         if (!barcode.isNullOrEmpty()) {
             viewModel.update { copy(barcode = barcode) }
@@ -92,7 +91,12 @@ fun AddEditProductScreen(
     LaunchedEffect(productId) { productId?.let { viewModel.loadProduct(it) } }
 
     Column(
-        Modifier.fillMaxSize().background(SMColors.BgDeep).verticalScroll(rememberScrollState()).padding(16.dp),
+        Modifier
+            .fillMaxSize()
+            .background(SMColors.BgDeep)
+            .imePadding()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         if (error != null) {
@@ -121,7 +125,7 @@ fun AddEditProductScreen(
 
         SMSectionCard("معلومات المنتج", Icons.Filled.Label) {
             SMField("اسم المنتج *", state.name, Icons.Filled.Label) { viewModel.update { copy(name = it) } }
-            
+
             SMField(
                 label = "الباركود",
                 value = state.barcode,
@@ -216,24 +220,24 @@ fun SMSectionCard(title: String, icon: ImageVector, content: @Composable ColumnS
 
 @Composable
 fun SMField(
-    label: String, 
-    value: String, 
-    icon: ImageVector, 
-    keyboardType: KeyboardType = KeyboardType.Text, 
-    modifier: Modifier = Modifier.fillMaxWidth(), 
-    trailingIcon: @Composable (() -> Unit)? = null, 
+    label: String,
+    value: String,
+    icon: ImageVector,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+    trailingIcon: @Composable (() -> Unit)? = null,
     onValueChange: (String) -> Unit
 ) {
     OutlinedTextField(
-        value = value, 
-        onValueChange = onValueChange, 
-        label = { Text(label) }, 
-        leadingIcon = { Icon(icon, null, tint = SMColors.TextSecondary, modifier = Modifier.size(20.dp)) }, 
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        leadingIcon = { Icon(icon, null, tint = SMColors.TextSecondary, modifier = Modifier.size(20.dp)) },
         trailingIcon = trailingIcon,
-        modifier = modifier, 
-        shape = RoundedCornerShape(14.dp), 
-        colors = smOutlinedColors(), 
-        singleLine = true, 
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        colors = smOutlinedColors(),
+        singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
     )
 }
