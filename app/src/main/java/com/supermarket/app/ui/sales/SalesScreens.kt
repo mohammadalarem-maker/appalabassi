@@ -46,6 +46,11 @@ fun SalesScreen(
     val isCartNotEmpty = cartItems.isNotEmpty()
     val context = LocalContext.current
 
+    // استقبال نوع الصلاحية من الـ ViewModel
+    val userRole by viewModel.userRole.collectAsState()
+    // يمنع الكاشير ويسمح للمدير أو الأدمن فقط بإضافة أصناف أو منتجات
+    val canAddProduct = !userRole.equals("CASHIER", ignoreCase = true)
+
     // إعدادات الطابعة لتغييرها بسهولة: استخدم "WIFI" للشبكة أو "BT" للبلوتوث
     var printerType by remember { mutableStateOf("WIFI") }
     var printerAddress by remember { mutableStateOf("192.168.1.100") }
@@ -55,13 +60,16 @@ fun SalesScreen(
             TopAppBar(
                 title = { Text("نقطة البيع السريعة", color = SMColors.TextPrimary, fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 actions = {
-                    TextButton(onClick = onNavigateToAddCategory, colors = ButtonDefaults.textButtonColors(contentColor = SMColors.Primary)) {
-                        Icon(Icons.Filled.Category, null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("إضافة صنف", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    }
-                    IconButton(onClick = onNavigateToAddProduct) {
-                        Icon(Icons.Filled.AddCircle, "إضافة منتج", tint = SMColors.Primary, modifier = Modifier.size(28.dp))
+                    // التحقق من الصلاحية قبل إظهار الأزرار الإدارية
+                    if (canAddProduct) {
+                        TextButton(onClick = onNavigateToAddCategory, colors = ButtonDefaults.textButtonColors(contentColor = SMColors.Primary)) {
+                            Icon(Icons.Filled.Category, null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("إضافة صنف", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        IconButton(onClick = onNavigateToAddProduct) {
+                            Icon(Icons.Filled.AddCircle, "إضافة منتج", tint = SMColors.Primary, modifier = Modifier.size(28.dp))
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = SMColors.BgSurface)

@@ -42,6 +42,18 @@ class NewSaleViewModel @Inject constructor(
     private val _isLoading  = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
+    // تدفق لمراقبة صلاحية المستخدم الحالي والتحقق منها ديناميكياً
+    private val _userRole = MutableStateFlow("CASHIER")
+    val userRole: StateFlow<String> = _userRole.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val user = prefsManager.getUser()
+            // جلب الصلاحية بشكل آمن سواء كانت String أو Enum
+            _userRole.value = user?.role?.toString() ?: "CASHIER"
+        }
+    }
+
     val searchResults: StateFlow<List<Product>> = _searchQuery
         .debounce(250)
         .flatMapLatest { q -> productDao.searchProducts(q) }
@@ -57,7 +69,6 @@ class NewSaleViewModel @Inject constructor(
     fun onSearch(q: String) { _searchQuery.value = q }
     fun setDiscount(v: Double) { _discount.value = v }
 
-    // دالة إلغاء الدفع وتفريغ السلة بالكامل
     fun clearCart() {
         _cartItems.value = emptyList()
         _discount.value = 0.0
@@ -92,11 +103,11 @@ class NewSaleViewModel @Inject constructor(
     fun removeFromCart(id: String) { _cartItems.update { it.filter { item -> item.productId != id } } }
 
     fun completeSale(
-        customerName: String, 
-        paidAmount: Double, 
-        paymentMethod: PaymentMethod, 
-        printerType: String = "NONE", // "BT" أو "WIFI" أو "NONE"
-        printerAddress: String = "",  // Mac Address للبلوتوث أو IP للوايرلس
+        customerName: String,
+        paidAmount: Double,
+        paymentMethod: PaymentMethod,
+        printerType: String = "NONE",
+        printerAddress: String = "",
         onSuccess: () -> Unit
     ) {
         _isLoading.value = true
@@ -120,18 +131,15 @@ class NewSaleViewModel @Inject constructor(
                 status        = SaleStatus.COMPLETED
             )
 
-            // 1. الحفظ المحلي وتحديث المخزون
             saleDao.insertSale(sale)
             sale.items.forEach { item -> productDao.decreaseStock(item.productId, item.quantity.toInt()) }
-            
-            // 2. الرفع السحابي والتحقق من نواقص المخزون
+
             firebaseRepository.addSale(sale)
             sale.items.forEach { item ->
                 val p = productDao.getProductById(item.productId)
                 if (p != null && p.quantity <= p.minQuantity) firebaseRepository.sendLowStockNotification(p)
             }
 
-            // 3. طباعة الفاتورة تلقائياً إذا كانت مفعلة
             if (printerType != "NONE" && printerAddress.isNotBlank()) {
                 val receiptText = generateReceiptText(sale)
                 if (printerType == "BT") {
@@ -149,7 +157,6 @@ class NewSaleViewModel @Inject constructor(
         }
     }
 
-    // صياغة نص الفاتورة الحرارية بالتنسيق القياسي ESC/POS
     private fun generateReceiptText(sale: Sale): String {
         val sb = StringBuilder()
         sb.append("      سوبرماركت الحسام      \n")
