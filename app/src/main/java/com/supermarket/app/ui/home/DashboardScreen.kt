@@ -97,17 +97,9 @@ fun DashboardScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = {
-                            barcodeScanner.startScan()
-                                .addOnSuccessListener { res ->
-                                    res.rawValue?.let { code -> viewModel.checkBarcodeOnHome(code) }
-                                }
-                                .addOnFailureListener { e ->
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        "خطأ في فتح الكاميرا: تأكد من تحديث خدمات Google Play أو انتظار اكتمال تنزيل الملفات الاستباقية",
-                                        android.widget.Toast.LENGTH_LONG
-                                    ).show()
-                                }
+                            barcodeScanner.startScan().addOnSuccessListener { res ->
+                                res.rawValue?.let { code -> viewModel.checkBarcodeOnHome(code) }
+                            }
                         },
                         modifier = Modifier.size(40.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(14.dp)).border(1.dp, SMColors.Primary.copy(0.3f), RoundedCornerShape(14.dp))
                     ) { Icon(Icons.Filled.QrCodeScanner, null, tint = SMColors.Primary, modifier = Modifier.size(20.dp)) }
@@ -147,7 +139,7 @@ fun DashboardScreen(
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 KpiCard("مبيعات اليوم", "${"%.1f".format(stats.todaySales)} ر", "${stats.todayTransactions} فاتورة", Icons.Filled.TrendingUp, SMColors.Primary, Modifier.weight(1f))
-                KpiCard("التحذيرات", "${stats.lowStockProducts}", "مخزون منخفض", Icons.Filled.Warning, if (stats.lowStockProducts > 0) SMColors.Warning else SMColors.TextMuted, Modifier.weight(1f), onClick = { onNavigate("inventory") })
+                KpiCard("التحذيرات", "${stats.lowStockProducts}", "مخجوان منخفض", Icons.Filled.Warning, if (stats.lowStockProducts > 0) SMColors.Warning else SMColors.TextMuted, Modifier.weight(1f), onClick = { onNavigate("inventory") })
             }
         }
 
@@ -395,15 +387,6 @@ fun SaleDetailsEditDialog(
     var paymentMethod by remember { mutableStateOf(sale.paymentMethod) }
     var printerIpAddress by remember { mutableStateOf("192.168.1.100") }
     var printerMacAddress by remember { mutableStateOf("") }
-    val printStatus by newSaleViewModel.printStatus.collectAsState()
-    val context = LocalContext.current
-
-    LaunchedEffect(printStatus) {
-        printStatus?.let {
-            android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
-            newSaleViewModel.clearPrintStatus()
-        }
-    }
 
     val updatedTotal = editableItems.sumOf { it.quantity * it.unitPrice }
 
