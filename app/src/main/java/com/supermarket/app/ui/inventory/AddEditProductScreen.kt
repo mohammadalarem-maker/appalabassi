@@ -32,7 +32,8 @@ import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.supermarket.app.data.models.ProductCategory
 import com.supermarket.app.ui.theme.SMColors
-import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
@@ -51,10 +52,15 @@ fun AddEditProductScreen(
     val error by viewModel.error.collectAsState()
     val context = LocalContext.current
 
-    val barcodeScanner = remember { GmsBarcodeScanning.getClient(context) }
     val tempFile by remember { mutableStateOf(File(context.cacheDir, "temp_product_capture.jpg")) }
     val tempUri by remember { mutableStateOf(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", tempFile)) }
     var bitmapPreview by remember { mutableStateOf<Bitmap?>(null) }
+
+    val barcodeLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        if (result.contents != null) {
+            viewModel.update { copy(barcode = result.contents) }
+        }
+    }
 
     LaunchedEffect(barcode) {
         if (!barcode.isNullOrEmpty()) {
@@ -132,13 +138,13 @@ fun AddEditProductScreen(
                 icon = Icons.Filled.QrCode,
                 trailingIcon = {
                     IconButton(onClick = {
-                        barcodeScanner.startScan()
-                            .addOnSuccessListener { res ->
-                                res.rawValue?.let { code -> viewModel.update { copy(barcode = code) } }
-                            }
-                            .addOnFailureListener { e -> e.printStackTrace() }
+                        val options = ScanOptions()
+                            .setOrientationLocked(false)
+                            .setBeepEnabled(true)
+                            .setPrompt("وجّه الكاميرا نحو الباركود")
+                        barcodeLauncher.launch(options)
                     }) {
-                        Icon(Icons.Filled.PhotoCamera, contentDescription = "مسح", tint = SMColors.Primary)
+                        Icon(Icons.Filled.QrCodeScanner, contentDescription = "مسح الباركود", tint = SMColors.Primary)
                     }
                 }
             ) { viewModel.update { copy(barcode = it) } }
