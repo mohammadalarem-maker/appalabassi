@@ -41,12 +41,14 @@ fun SalesScreen(
     val products by viewModel.searchResults.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val totalAmount by viewModel.total.collectAsState()
-
     val cartItems by viewModel.cartItems.collectAsState()
     var showPaySheet by remember { mutableStateOf(false) }
-
     val isCartNotEmpty = cartItems.isNotEmpty()
     val context = LocalContext.current
+
+    // إعدادات الطابعة لتغييرها بسهولة: استخدم "WIFI" للشبكة أو "BT" للبلوتوث
+    var printerType by remember { mutableStateOf("WIFI") }
+    var printerAddress by remember { mutableStateOf("192.168.1.100") }
 
     Scaffold(
         topBar = {
@@ -143,7 +145,10 @@ fun SalesScreen(
                 items(products) { product ->
                     POSProductCard(
                         product = product,
-                        onClick = { viewModel.addToCart(product) }
+                        onClick = { 
+                            viewModel.addToCart(product) 
+                            showPaySheet = true 
+                        }
                     )
                 }
             }
@@ -204,16 +209,16 @@ fun SalesScreen(
                                     ) {
                                         Icon(Icons.Filled.Remove, null, tint = SMColors.TextPrimary, modifier = Modifier.size(14.dp))
                                     }
-                                    
+
                                     Text(
-                                        text = saleItem.quantity.toInt().toString(), 
-                                        color = SMColors.TextPrimary, 
-                                        fontSize = 13.sp, 
+                                        text = saleItem.quantity.toInt().toString(),
+                                        color = SMColors.TextPrimary,
+                                        fontSize = 13.sp,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.width(40.dp),
                                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                     )
-                                    
+
                                     IconButton(
                                         onClick = { viewModel.increaseQty(saleItem.productId) },
                                         modifier = Modifier.size(26.dp).background(SMColors.BgDeep, RoundedCornerShape(6.dp))
@@ -297,6 +302,8 @@ fun SalesScreen(
                             customerName = "زبون نقدي سريع",
                             paidAmount = paidAmount,
                             paymentMethod = selectedMethod,
+                            printerType = printerType,
+                            printerAddress = printerAddress,
                             onSuccess = { showPaySheet = false }
                         )
                     },
@@ -307,6 +314,20 @@ fun SalesScreen(
                 ) {
                     if (isLoading) CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(22.dp))
                     else Text("تأكيد البيع وطباعة الفاتورة", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 15.sp)
+                }
+
+                Button(
+                    onClick = {
+                        viewModel.clearCart()
+                        showPaySheet = false
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = SMColors.Error.copy(alpha = 0.85f))
+                ) {
+                    Icon(Icons.Filled.Close, null, tint = Color.White)
+                    Spacer(Modifier.width(6.dp))
+                    Text("إلغاء الدفع وتفريغ السلة", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
             }
         }

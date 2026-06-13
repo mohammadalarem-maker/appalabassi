@@ -1,5 +1,4 @@
 package com.supermarket.app.ui.sales
-import com.supermarket.app.ui.smOutlinedColors
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,10 +13,15 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+import java.io.OutputStream
+import java.net.InetSocketAddress
+import java.net.Socket
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothSocket
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
-// ============================
-// NEW SALE VIEWMODEL
-// ============================
 @HiltViewModel
 class NewSaleViewModel @Inject constructor(
     private val productDao: ProductDao,
@@ -53,6 +57,13 @@ class NewSaleViewModel @Inject constructor(
     fun onSearch(q: String) { _searchQuery.value = q }
     fun setDiscount(v: Double) { _discount.value = v }
 
+    // دالة إلغاء الدفع وتفريغ السلة بالكامل
+    fun clearCart() {
+        _cartItems.value = emptyList()
+        _discount.value = 0.0
+        _searchQuery.value = ""
+    }
+
     fun addToCart(product: Product) {
         val existing = _cartItems.value.find { it.productId == product.id }
         if (existing != null) {
@@ -80,7 +91,14 @@ class NewSaleViewModel @Inject constructor(
 
     fun removeFromCart(id: String) { _cartItems.update { it.filter { item -> item.productId != id } } }
 
-    fun completeSale(customerName: String, paidAmount: Double, paymentMethod: PaymentMethod, onSuccess: () -> Unit) {
+    fun completeSale(
+        customerName: String, 
+        paidAmount: Double, 
+        paymentMethod: PaymentMethod, 
+        printerType: String = "NONE", // "BT" أو "WIFI" أو "NONE"
+        printerAddress: String = "",  // Mac Address للبلوتوث أو IP للوايرلس
+        onSuccess: () -> Unit
+    ) {
         _isLoading.value = true
         viewModelScope.launch {
             val user = prefsManager.getUser()
@@ -101,13 +119,28 @@ class NewSaleViewModel @Inject constructor(
                 cashierName   = user?.username ?: "",
                 status        = SaleStatus.COMPLETED
             )
+
+            // 1. الحفظ المحلي وتحديث المخزون
             saleDao.insertSale(sale)
-            _cartItems.value.forEach { item -> productDao.decreaseStock(item.productId, item.quantity.toInt()) }
+            sale.items.forEach { item -> productDao.decreaseStock(item.productId, item.quantity.toInt()) }
+            
+            // 2. الرفع السحابي والتحقق من نواقص المخزون
             firebaseRepository.addSale(sale)
-            _cartItems.value.forEach { item ->
+            sale.items.forEach { item ->
                 val p = productDao.getProductById(item.productId)
                 if (p != null && p.quantity <= p.minQuantity) firebaseRepository.sendLowStockNotification(p)
             }
+
+            // 3. طباعة الفاتورة تلقائياً إذا كانت مفعلة
+            if (printerType != "NONE" && printerAddress.isNotBlank()) {
+                val receiptText = generateReceiptText(sale)
+                if (printerType == "BT") {
+                    printViaBluetooth(printerAddress, receiptText)
+                } else if (printerType == "WIFI") {
+                    printViaWifi(printerAddress, 9100, receiptText)
+                }
+            }
+
             _isLoading.value = false
             _cartItems.value = emptyList()
             _discount.value  = 0.0
@@ -115,23 +148,69 @@ class NewSaleViewModel @Inject constructor(
             onSuccess()
         }
     }
+
+    // صياغة نص الفاتورة الحرارية بالتنسيق القياسي ESC/POS
+    private fun generateReceiptText(sale: Sale): String {
+        val sb = StringBuilder()
+        sb.append("      سوبرماركت الحسام      \n")
+        sb.append("--------------------------------\n")
+        sb.append("رقم الفاتورة: ${sale.invoiceNumber}\n")
+        sb.append("التاريخ: ${SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault()).format(Date())}\n")
+        sb.append("الكاشير: ${sale.cashierName}\n")
+        sb.append("--------------------------------\n")
+        sb.append("الصنف          الكمية     الإجمالي\n")
+        sb.append("--------------------------------\n")
+        sale.items.forEach { item ->
+            val namePadded = item.productName.padEnd(14).take(14)
+            val qtyPadded = item.quantity.toInt().toString().padEnd(6)
+            sb.append("$namePadded $qtyPadded ${item.total} ر.ي\n")
+        }
+        sb.append("--------------------------------\n")
+        sb.append("المجموع: ${sale.subtotal} ر.ي\n")
+        sb.append("الخصم: ${sale.discount} ر.ي\n")
+        sb.append("الإجمالي النهائي: ${sale.total} ر.ي\n")
+        sb.append("--------------------------------\n")
+        sb.append("    شكراً لزيارتكم وثقتكم بنا    \n\n\n\n")
+        return sb.toString()
+    }
+
+    private suspend fun printViaBluetooth(macAddress: String, text: String) = withContext(Dispatchers.IO) {
+        try {
+            val adapter = BluetoothAdapter.getDefaultAdapter() ?: return@withContext
+            val device: BluetoothDevice = adapter.getRemoteDevice(macAddress)
+            val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+            val socket: BluetoothSocket = device.createRfcommSocketToServiceRecord(uuid)
+            socket.connect()
+            val outputStream = socket.outputStream
+            outputStream.write(text.toByteArray(charset("Cp1256")))
+            outputStream.flush()
+            outputStream.close()
+            socket.close()
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    private suspend fun printViaWifi(ip: String, port: Int, text: String) = withContext(Dispatchers.IO) {
+        try {
+            val socket = Socket()
+            socket.connect(InetSocketAddress(ip, port), 3000)
+            val outputStream = socket.getOutputStream()
+            outputStream.write(text.toByteArray(charset("Cp1256")))
+            outputStream.flush()
+            outputStream.close()
+            socket.close()
+        } catch (e: Exception) { e.printStackTrace() }
+    }
 }
 
-// ============================
-// SALES HISTORY VIEWMODEL
-// ============================
 @HiltViewModel
 class SalesViewModel @Inject constructor(private val saleDao: SaleDao) : ViewModel() {
-
     val sales: StateFlow<List<Sale>> = saleDao.getAllSales()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // الميزة الجديدة: تجميع مبيعات اليوم حسب اسم الكاشير تلقائياً
     val todaySalesByCashier: StateFlow<Map<String, Double>> = sales.map { list ->
         val cal = Calendar.getInstance()
         cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
         val startDay = cal.timeInMillis
-
         list.filter { it.createdAt >= startDay && it.status == SaleStatus.COMPLETED }
             .groupBy { it.cashierName.ifEmpty { "غير معروف" } }
             .mapValues { entry -> entry.value.sumOf { it.total } }
