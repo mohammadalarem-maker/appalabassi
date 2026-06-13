@@ -34,4 +34,10 @@ class PrefsManager @Inject constructor(@ApplicationContext private val context: 
     fun getTaxRate(): Double = prefs.getFloat("tax", 0f).toDouble()
     fun setCurrency(v: String) { prefs.edit().putString("currency", v).apply() }
     fun getCurrency(): String = prefs.getString("currency", "ريال") ?: "ريال"
+
+    // إعدادات الطابعة
+    fun setPrinterType(v: String) { prefs.edit().putString("printer_type", v).apply() }
+    fun getPrinterType(): String = prefs.getString("printer_type", "NONE") ?: "NONE"
+    fun setPrinterAddress(v: String) { prefs.edit().putString("printer_address", v).apply() }
+    fun getPrinterAddress(): String = prefs.getString("printer_address", "") ?: ""
 }
