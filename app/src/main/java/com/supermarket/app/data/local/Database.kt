@@ -5,9 +5,6 @@ import com.google.gson.Gson
 import com.supermarket.app.data.models.*
 import kotlinx.coroutines.flow.Flow
 
-// ============================
-// TYPE CONVERTERS
-// ============================
 class Converters {
     private val gson = Gson()
     @TypeConverter fun saleItemsToJson(v: List<SaleItem>): String = gson.toJson(v)
@@ -30,9 +27,6 @@ class Converters {
     @TypeConverter fun strToMembership(v: String): MembershipLevel = MembershipLevel.valueOf(v)
 }
 
-// ============================
-// DAOs
-// ============================
 @Dao
 interface ProductDao {
     @Query("SELECT * FROM products WHERE isActive = 1 ORDER BY name ASC")
@@ -71,6 +65,8 @@ interface SaleDao {
     suspend fun getTotalSalesAmount(start: Long, end: Long): Double?
     @Query("SELECT COUNT(*) FROM sales WHERE createdAt >= :start AND createdAt <= :end AND status = 'COMPLETED'")
     suspend fun getSalesCount(start: Long, end: Long): Int
+    @Query("SELECT * FROM sales WHERE createdAt >= :start AND createdAt <= :end AND status = 'COMPLETED' ORDER BY createdAt DESC")
+    suspend fun getSalesBetween(start: Long, end: Long): List<Sale>
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSale(sale: Sale)
     @Update
@@ -117,9 +113,6 @@ interface ExpenseDao {
     suspend fun deleteExpense(id: String)
 }
 
-// ============================
-// DATABASE
-// ============================
 @Database(
     entities = [Product::class, Sale::class, Customer::class, Purchase::class, Expense::class],
     version  = 1,

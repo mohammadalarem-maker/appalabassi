@@ -73,6 +73,12 @@ dependencies {
     implementation 'androidx.hilt:hilt-navigation-compose:1.2.0'
 
     implementation 'com.google.code.gson:gson:2.10.1'
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+    implementation 'com.itextpdf:itext7-core:7.2.5'
+    implementation 'org.apache.poi:poi:5.2.3'
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+    implementation 'com.itextpdf:itext7-core:7.2.5'
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'androidx.datastore:datastore-preferences:1.0.0'
     implementation 'com.google.accompanist:accompanist-systemuicontroller:0.32.0'

@@ -19,11 +19,14 @@ import java.net.Socket
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class NewSaleViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val productDao: ProductDao,
     private val saleDao: SaleDao,
     private val firebaseRepository: FirebaseRepository,
@@ -133,9 +136,13 @@ class NewSaleViewModel @Inject constructor(
             sale.items.forEach { item -> productDao.decreaseStock(item.productId, item.quantity.toInt()) }
 
             firebaseRepository.addSale(sale)
+            com.supermarket.app.utils.NotificationHelper.showSaleNotification(context, sale.invoiceNumber, sale.total, sale.cashierName)
             sale.items.forEach { item ->
                 val p = productDao.getProductById(item.productId)
-                if (p != null && p.quantity <= p.minQuantity) firebaseRepository.sendLowStockNotification(p)
+                if (p != null && p.quantity <= p.minQuantity) {
+                firebaseRepository.sendLowStockNotification(p)
+                com.supermarket.app.utils.NotificationHelper.showLowStockNotification(context, p.name, p.quantity)
+            }
             }
 
             if (printerType != "NONE" && printerAddress.isNotBlank()) {

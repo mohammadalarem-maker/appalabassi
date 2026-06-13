@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.supermarket.app.data.local.ExpenseDao
 import com.supermarket.app.data.local.SaleDao
+import com.supermarket.app.data.models.Sale
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -30,23 +31,30 @@ class ReportsViewModel @Inject constructor(
     private val _weeklySales = MutableStateFlow<List<Pair<String, Double>>>(emptyList())
     val weeklySales: StateFlow<List<Pair<String, Double>>> = _weeklySales
 
+    private val _salesList = MutableStateFlow<List<Sale>>(emptyList())
+    val salesList: StateFlow<List<Sale>> = _salesList
+
+    private var currentStart = 0L
+    private var currentEnd = 0L
+
     init { loadPeriod(1) }
 
     fun loadPeriod(period: Int) {
         viewModelScope.launch {
             val cal = Calendar.getInstance()
-            val end = cal.timeInMillis
-            val start = when (period) {
+            currentEnd = cal.timeInMillis
+            currentStart = when (period) {
                 0 -> { cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.timeInMillis }
                 1 -> { cal.add(Calendar.DAY_OF_YEAR, -7); cal.timeInMillis }
                 2 -> { cal.set(Calendar.DAY_OF_MONTH, 1); cal.timeInMillis }
                 else -> { cal.set(Calendar.DAY_OF_YEAR, 1); cal.timeInMillis }
             }
-            val sales    = saleDao.getTotalSalesAmount(start, end) ?: 0.0
-            val expenses = expenseDao.getTotalExpenses(start, end) ?: 0.0
+            val sales    = saleDao.getTotalSalesAmount(currentStart, currentEnd) ?: 0.0
+            val expenses = expenseDao.getTotalExpenses(currentStart, currentEnd) ?: 0.0
             val cogs     = sales * 0.65
             val gross    = sales - cogs
             _stats.value = ReportStats(sales, 0.0, expenses, cogs, gross, gross - expenses)
+            _salesList.value = saleDao.getSalesBetween(currentStart, currentEnd)
             loadWeekly()
         }
     }
