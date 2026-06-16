@@ -210,7 +210,7 @@ fun CashierSalesBreakdown(viewModel: SalesViewModel = hiltViewModel()) {
                 }
             }
 
-            Spacer(modifier = modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             if (cashierSales.isEmpty()) {
                 Text("لا توجد عمليات بيع مسجلة للموظفين اليوم بعد.", color = SMColors.TextMuted, fontSize = 12.sp)
             } else {
@@ -411,7 +411,7 @@ fun RecentSaleRow(sale: com.supermarket.app.data.models.Sale, onClick: () -> Uni
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).background(SMColors.BgCard, RoundedCornerShape(14.dp)).border(1.dp, SMColors.BgCardBorder, RoundedCornerShape(14.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(36.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(10.dp)), contentAlignment = Center) { Icon(Icons.Outlined.Receipt, null, tint = SMColors.Primary, modifier = Modifier.size(18.dp)) }
+            Box(Modifier.size(36.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Receipt, null, tint = SMColors.Primary, modifier = Modifier.size(18.dp)) }
             Column {
                 Text(sale.invoiceNumber, color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Text("${sale.items.size} منتج • ${timeFormat.format(Date(sale.createdAt))}", color = SMColors.TextMuted, fontSize = 11.sp)
