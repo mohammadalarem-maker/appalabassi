@@ -103,7 +103,7 @@ fun DashboardScreen(
                                     res.rawValue?.let { code -> viewModel.checkBarcodeOnHome(code) }
                                 }
                                 .addOnFailureListener { e ->
-                                    android.widget.Toast.makeText(context, "جاري تهيئة السكنر من خدمات جوجل، انتظر لحظة...", android.widget.Toast.LENGTH_LONG).show()
+                                    android.widget.Toast.makeText(context, "لم ينجح الفتح: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
                                 }
                         },
                         modifier = Modifier.size(40.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(14.dp)).border(1.dp, SMColors.Primary.copy(0.3f), RoundedCornerShape(14.dp))
