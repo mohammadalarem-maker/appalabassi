@@ -1,8 +1,6 @@
 package com.supermarket.app.ui.home
-
 import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.layout.* import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -83,23 +81,30 @@ fun DashboardScreen(
         )
     }
 
+    val isLightMode = !isSystemInDarkTheme()
+    val screenBackground = if (isLightMode) Color(0xFFF4F6F8) else SMColors.BgDeep
+
     LazyColumn(
-        modifier = Modifier.fillMaxSize().background(SMColors.BgDeep),
+        modifier = Modifier.fillMaxSize().background(screenBackground),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column {
-                    Text("مرحباً 👋", color = SMColors.TextSecondary, fontSize = 13.sp)
+                    Text("مرحباً العباسي 👋", color = SMColors.TextSecondary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     Text(dateFormat.format(now), color = SMColors.TextPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = {
-                            barcodeScanner.startScan().addOnSuccessListener { res ->
-                                res.rawValue?.let { code -> viewModel.checkBarcodeOnHome(code) }
-                            }
+                            barcodeScanner.startScan()
+                                .addOnSuccessListener { res ->
+                                    res.rawValue?.let { code -> viewModel.checkBarcodeOnHome(code) }
+                                }
+                                .addOnFailureListener { e ->
+                                    android.widget.Toast.makeText(context, "جاري تهيئة السكنر من خدمات جوجل، انتظر لحظة...", android.widget.Toast.LENGTH_LONG).show()
+                                }
                         },
                         modifier = Modifier.size(40.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(14.dp)).border(1.dp, SMColors.Primary.copy(0.3f), RoundedCornerShape(14.dp))
                     ) { Icon(Icons.Filled.QrCodeScanner, null, tint = SMColors.Primary, modifier = Modifier.size(20.dp)) }
@@ -125,12 +130,15 @@ fun DashboardScreen(
             }
         }
 
-        item { Text("الوصول السريع", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
+        item { Text("الوصول السريع والأقسام", color = SMColors.TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.SemiBold) }
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ProductVisualCard(recentProducts, stats.totalProducts, Modifier.weight(1f)) { onNavigate("inventory") }
-                CategoryVisualCard(ProductCategory.values().toList(), Modifier.weight(1f)) { onNavigate("inventory") }
+                ProductVisualCard(recentProducts, Modifier.weight(1f)) { product ->
+                    try { viewModel.checkBarcodeOnHome(product.barcode) } catch(e: Exception) {}
+                    android.widget.Toast.makeText(context, "تمت إضافة ${product.name} للفاتورة", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                CategoryVisualCard(ProductCategory.values().toList(), Modifier.weight(1f))
             }
         }
 
@@ -202,7 +210,7 @@ fun CashierSalesBreakdown(viewModel: SalesViewModel = hiltViewModel()) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = modifier.height(12.dp))
             if (cashierSales.isEmpty()) {
                 Text("لا توجد عمليات بيع مسجلة للموظفين اليوم بعد.", color = SMColors.TextMuted, fontSize = 12.sp)
             } else {
@@ -222,75 +230,116 @@ fun CashierSalesBreakdown(viewModel: SalesViewModel = hiltViewModel()) {
 }
 
 @Composable
-fun ProductVisualCard(products: List<com.supermarket.app.data.models.Product>, totalCount: Int, modifier: Modifier, onClick: () -> Unit) {
-    Card(modifier = modifier.aspectRatio(1f).clickable(onClick = onClick), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = SMColors.BgCard), border = BorderStroke(1.dp, SMColors.BgCardBorder)) {
-        Column(Modifier.padding(12.dp).fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+fun ProductVisualCard(
+    products: List<com.supermarket.app.data.models.Product>,
+    modifier: Modifier,
+    onProductClick: (com.supermarket.app.data.models.Product) -> Unit
+) {
+    Card(modifier = modifier.aspectRatio(1f), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = SMColors.BgCard), border = BorderStroke(1.dp, SMColors.BgCardBorder)) {
+        Column(Modifier.padding(10.dp).fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("المنتجات", color = SMColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Icon(Icons.Filled.Inventory2, null, tint = SMColors.AccentPurple, modifier = Modifier.size(16.dp))
+                Text("الوصول السريع", color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Icon(Icons.Filled.Inventory2, null, tint = SMColors.AccentPurple, modifier = Modifier.size(15.dp))
             }
             val items = products.take(4)
-            Column(Modifier.fillMaxWidth().aspectRatio(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MiniProductImage(items.getOrNull(0), Modifier.weight(1f).fillMaxHeight())
-                    MiniProductImage(items.getOrNull(1), Modifier.weight(1f).fillMaxHeight())
+            Column(Modifier.fillMaxWidth().weight(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { MiniCircularProductItem(items.getOrNull(0), onProductClick) }
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { MiniCircularProductItem(items.getOrNull(1), onProductClick) }
                 }
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MiniProductImage(items.getOrNull(2), Modifier.weight(1f).fillMaxHeight())
-                    MiniProductImage(items.getOrNull(3), Modifier.weight(1f).fillMaxHeight())
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { MiniCircularProductItem(items.getOrNull(2), onProductClick) }
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { MiniCircularProductItem(items.getOrNull(3), onProductClick) }
                 }
-            }
-            Text("$totalCount صنف مسجل", color = SMColors.TextMuted, fontSize = 11.sp)
-        }
-    }
-}
-
-@Composable
-fun MiniProductImage(product: com.supermarket.app.data.models.Product?, modifier: Modifier) {
-    Box(modifier.background(SMColors.BgDeep, RoundedCornerShape(8.dp)).clip(RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-        if (product != null) {
-            if (product.imageUrl.isNotEmpty()) {
-                val context = LocalContext.current
-                val imgData = remember(product.imageUrl) {
-                    if (product.imageUrl.startsWith("http")) product.imageUrl
-                    else try { android.util.Base64.decode(product.imageUrl, android.util.Base64.DEFAULT) } catch(e: Exception) { null }
-                }
-                SubcomposeAsyncImage(model = coil.request.ImageRequest.Builder(context).data(imgData).crossfade(true).size(150).build(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-            } else {
-                Text(product.name.take(2).uppercase(), color = SMColors.Primary.copy(0.7f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
 @Composable
-fun CategoryVisualCard(categories: List<ProductCategory>, modifier: Modifier, onClick: () -> Unit) {
-    Card(modifier = modifier.aspectRatio(1f).clickable(onClick = onClick), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = SMColors.BgCard), border = BorderStroke(1.dp, SMColors.BgCardBorder)) {
-        Column(Modifier.padding(12.dp).fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+fun MiniCircularProductItem(
+    product: com.supermarket.app.data.models.Product?,
+    onClick: (com.supermarket.app.data.models.Product) -> Unit
+) {
+    if (product != null) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize().clickable { onClick(product) },
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(SMColors.BgDeep)
+                    .border(1.dp, SMColors.BgCardBorder, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (product.imageUrl.isNotEmpty()) {
+                    val context = LocalContext.current
+                    val imgData = remember(product.imageUrl) {
+                        if (product.imageUrl.startsWith("http")) product.imageUrl
+                        else try { android.util.Base64.decode(product.imageUrl, android.util.Base64.DEFAULT) } catch(e: Exception) { null }
+                    }
+                    SubcomposeAsyncImage(model = coil.request.ImageRequest.Builder(context).data(imgData).crossfade(true).size(100).build(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                } else {
+                    Text(product.name.take(1).uppercase(), color = SMColors.Primary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(product.name, color = SMColors.TextSecondary, fontSize = 9.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+    } else {
+        Spacer(Modifier.fillMaxSize())
+    }
+}
+
+@Composable
+fun CategoryVisualCard(categories: List<ProductCategory>, modifier: Modifier) {
+    Card(modifier = modifier.aspectRatio(1f), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = SMColors.BgCard), border = BorderStroke(1.dp, SMColors.BgCardBorder)) {
+        Column(Modifier.padding(10.dp).fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text("الأقسام", color = SMColors.TextPrimary, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                Icon(Icons.Filled.Widgets, null, tint = SMColors.AccentCyan, modifier = Modifier.size(16.dp))
+                Text("الأقسام", color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Icon(Icons.Filled.Widgets, null, tint = SMColors.AccentCyan, modifier = Modifier.size(15.dp))
             }
             val items = categories.take(4)
-            Column(Modifier.fillMaxWidth().aspectRatio(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MiniCategoryBox(items.getOrNull(0), Modifier.weight(1f).fillMaxHeight())
-                    MiniCategoryBox(items.getOrNull(1), Modifier.weight(1f).fillMaxHeight())
+            Column(Modifier.fillMaxWidth().weight(1f).padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { MiniCircularCategoryItem(items.getOrNull(0)) }
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { MiniCircularCategoryItem(items.getOrNull(1)) }
                 }
-                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    MiniCategoryBox(items.getOrNull(2), Modifier.weight(1f).fillMaxHeight())
-                    MiniCategoryBox(items.getOrNull(3), Modifier.weight(1f).fillMaxHeight())
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { MiniCircularCategoryItem(items.getOrNull(2)) }
+                    Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) { MiniCircularCategoryItem(items.getOrNull(3)) }
                 }
             }
-            Text("إدارة فئات الأصناف", color = SMColors.TextMuted, fontSize = 11.sp)
         }
     }
 }
 
 @Composable
-fun MiniCategoryBox(cat: ProductCategory?, modifier: Modifier) {
-    Box(modifier.background(SMColors.BgDeep, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-        if (cat != null) Text(cat.emoji, fontSize = 20.sp)
+fun MiniCircularCategoryItem(cat: ProductCategory?) {
+    if (cat != null) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .background(SMColors.Primary.copy(0.12f))
+                    .border(1.dp, SMColors.Primary.copy(0.2f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(cat.emoji, fontSize = 18.sp)
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(cat.name, color = SMColors.TextSecondary, fontSize = 9.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+        }
+    } else {
+        Spacer(Modifier.fillMaxSize())
     }
 }
 
@@ -362,7 +411,7 @@ fun RecentSaleRow(sale: com.supermarket.app.data.models.Sale, onClick: () -> Uni
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).background(SMColors.BgCard, RoundedCornerShape(14.dp)).border(1.dp, SMColors.BgCardBorder, RoundedCornerShape(14.dp)).padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(36.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Receipt, null, tint = SMColors.Primary, modifier = Modifier.size(18.dp)) }
+            Box(Modifier.size(36.dp).background(SMColors.Primary.copy(0.12f), RoundedCornerShape(10.dp)), contentAlignment = Center) { Icon(Icons.Outlined.Receipt, null, tint = SMColors.Primary, modifier = Modifier.size(18.dp)) }
             Column {
                 Text(sale.invoiceNumber, color = SMColors.TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 Text("${sale.items.size} منتج • ${timeFormat.format(Date(sale.createdAt))}", color = SMColors.TextMuted, fontSize = 11.sp)
